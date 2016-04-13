@@ -30,33 +30,35 @@ void alignToMedian(double *daArray, int iSize) {
     // std::cout << dpSorted[(iSize/4)*3] << std::endl;
     // std::cout << dpSorted[(iSize/4)*3+1] << std::endl;
     delete [] dpSorted;
-    for (int i=0;i<iSize;i++) daArray[i] = daArray[i]/(dQ3-dQ1);    
+    for (int i=0;i<iSize;i++) {
+    	daArray[i] = daArray[i]/(dQ3-dQ1);    	
+    }    
 }
 void softmax(double *p, double *v, double b) {
 	double sum = 0.0;
-	double tmp[5];
-	// for (int i=0;i<5;i++) std::cout << v[i] << " "; std::cout << std::endl;
-	for (int i=0;i<5;i++) {
+	double tmp[4];
+	
+	for (int i=0;i<4;i++) {
 		tmp[i] = exp(v[i]*b);
 		sum+=tmp[i];		
 	}		
-	for (int i=0;i<5;i++) {
-		if (isinf(tmp[i])) {
-			for (int j=0;j<5;j++) {
-				p[j] = 0.0000001;
-			}			
-			p[i] = 0.9999996;
-			return ;
-		}	
-	}	
-	// for (int i=0;i<5;i++) std::cout << tmp[i] << " "; std::cout << std::endl;
-	for (int i=0;i<5;i++) {
+	// for (int i=0;i<4;i++) {
+	// 	if (isinf(tmp[i])) {
+	// 		for (int j=0;j<4;j++) {
+	// 			p[j] = 0.0000001;
+	// 		}			
+	// 		p[i] = 0.9999996;
+	// 		return ;
+	// 	}	
+	// }	
+	
+	for (int i=0;i<4;i++) {
 		p[i] = tmp[i]/sum;		
 	}
 }
 double entropy(double *p) {
 	double tmp = 0.0;
-	for (int i=0;i<5;i++) {tmp+=p[i]*log2(p[i]);}
+	for (int i=0;i<4;i++) {tmp+=p[i]*log2(p[i]);}
 	return -tmp;
 }
 // void sferes_call(double * fit, const char* data_dir, double alpha_, double beta_)
@@ -69,24 +71,18 @@ void sferes_call(double * fit, int N, const char* data_dir, double alpha_, doubl
 	double beta=0.0+beta_*(100.0-0.0);
 	double sigma=0.0+(20.0-0.0)*sigma_;
 	// double omega=0.0+omega_*(0.999999-0.0);
-	
-	// int nb_trials = N/4;
-	int n_state = 4;
-	int n_action = 5;
+	// std::cout << alpha << " " << beta << " " << std::endl;
+	int nb_trials = N;
+	int n_state = 2;
+	int n_action = 4;
 	int n_r = 2;	
 	///////////////////
 	int sari [N][8];	
-	// double mean_rt [15];
-	// double mean_model [15];	
-	// double values [N]; // action probabilities according to subject
-	// double rt [N]; // rt du model	
-	// double p_a_mf [n_action];
+	double monkeys_rt_centered [N];	
+	double values [N]; // log action probabilities according to monkeys
+	double rt [N]; // rt du model	
+	double p_a_mf [n_action];
 
-	// const char* _data_dir = data_dir;
-	// std::string file1 = _data_dir;
-	// std::string file2 = _data_dir;
-	// file1.append("sari.txt");
-	// file2.append("mean.txt");	
 	std::ifstream data_file(data_dir);
 	string line;
 	if (data_file.is_open())
@@ -95,99 +91,76 @@ void sferes_call(double * fit, int N, const char* data_dir, double alpha_, doubl
 		{  
 			getline (data_file,line);			
 			stringstream stream(line);
-			std::vector<int> values(
-     			(std::istream_iterator<int>(stream)),
-     			(std::istream_iterator<int>()));
+			std::vector<float> values_(
+     			(std::istream_iterator<float>(stream)),
+     			(std::istream_iterator<float>()));
 			for (int j=0;j<8;j++)
 			{
-				sari[i][j] = values[j];
-			}
+				sari[i][j] = (int)values_[j];				
+			}			
+			monkeys_rt_centered[i] = values_[8];
 		}
 	data_file.close();	
 	}
 
+	// double cumsum = 0.0;	
 
-
-
-// 	for (int i=0;i<4;i++)	
-// 	{		
-// 		// START BLOC //
-// 		double values_mf [n_state][n_action];	
-// 		int s, a, r;		
-// 		double Hf = 0.0;
-// 		for (int n=0;n<n_state;n++) { 			
-// 			for (int m=0;m<n_action;m++) {
-// 				values_mf[n][m] = 0.0;
-// 			}
-// 		}		
-// 		// START TRIAL //
-// 		for (int j=0;j<nb_trials;j++) 		
-// 		{							
-// 			// COMPUTE VALUE
-// 			s = sari[j+i*nb_trials][0]-1;
-// 			a = sari[j+i*nb_trials][1]-1;
-// 			r = sari[j+i*nb_trials][2];							
-// 			softmax(p_a_mf, values_mf[s], beta);
-// 			double Hf = entropy(p_a_mf);
-
-// 			// int ind=-1;
-// 			// for (int n=0;n<5;n++) {
-// 			// 	if (isnan(p_a_mf[n])) {
-// 			// 		ind = n;
-// 			// 		break;
-// 			// 	}
-// 			// }
-// 			// if (ind!=-1) {
-// 			// 	for (int n=0;n<5;n++) {
-// 			// 		p_a_mf[n] = 0.0001;
-// 			// 	}
-// 			// }
-// 			// p_a_mf[ind] = 0.9996;						
-// 			// if (isnan(Hf)) Hf = 0.005;
+	for (int i=0;i<1;i++)	
+	{		
+		// START BLOC //
+		double values_mf [n_action];	
+		int s, a, r;		
+		double Hf = 0.0;		
+		for (int m=0;m<n_action;m++) {
+				values_mf[m] = 0.0;			
+		}		
+		// START TRIAL //
+		// for (int j=0;j<6;j++) 				
+		for (int j=0;j<nb_trials;j++) 				
+		{							
+			// COMPUTE VALUE
+			s = sari[j][4]-1; // s is the solution to the problem
+			a = sari[j][5]-1; // a is the action performed by the monkey
+			r = sari[j][3];	// r is the amout of reward						
+			softmax(p_a_mf, values_mf, beta);
+			double Hf = entropy(p_a_mf);
 			
-// 			values[j+i*nb_trials] = log(p_a_mf[a]);						
-// 			rt[j+i*nb_trials] =  Hf;
-// 			// MODEL FREE	
-// 			double reward;
-// 			if (r == 0) {reward = -1.0;} else {reward = 1.0;}
-// 			double delta = reward - values_mf[s][a];
-// 			values_mf[s][a]+=(alpha*delta);
-// 			// if (r==1)				
-// 			// 	values_mf[s][a]+=(alpha*delta);
-// 			// else if (r==0)
-// 			// 	values_mf[s][a]+=(omega*delta);
-// 		}
-// 	}
+			values[j] = log(p_a_mf[a]);						
+			rt[j] =  Hf;
+			
+			// MODEL FREE	
+			double reward;
+			if (r == 0) {
+				reward = -1.0;
+			} else if (r == 1) {
+				reward = 1.0;
+			}
+			double delta = reward - values_mf[a];
+			values_mf[a]+=(alpha*delta);
+		}
+	}
 	
-// 	// ALIGN TO MEDIAN
-// 	alignToMedian(rt, N);	
-// 	// for (int i=0;i<N;i++) std::cout << rt[i] << std::endl;
-// 	double tmp2[15];
-// 	for (int i=0;i<15;i++) {
-// 		mean_model[i] = 0.0;
-// 		tmp2[i] = 0.0;
-// 	}
+	// ALIGN TO MEDIAN
+	alignToMedian(rt, N);	
+	
+	
 
-// 	for (int i=0;i<N;i++) {
-// 		mean_model[sari[i][3]-1]+=rt[i];
-// 		tmp2[sari[i][3]-1]+=1.0;				
-// 	}	
-// 	double error = 0.0;
-// 	for (int i=0;i<15;i++) {
-// 		mean_model[i]/=tmp2[i];
-// 		error+=pow(mean_rt[i]-mean_model[i],2.0);		
-// 	}	
-// 	for (int i=0;i<N;i++) fit[0]+=values[i];
-// 	fit[1] = -error;
-	
-// 	if (isnan(fit[0]) || isinf(fit[0]) || isinf(fit[1]) || isnan(fit[1]) || fit[0]<-10000 || fit[1]<-10000) {
-// 		fit[0]=-1000.0;
-// 		fit[1]=-1000.0;
-// 		return;
-// 	}
-// 	else {
-// 		fit[0]+=2000.0;
-// 		fit[1]+=500.0;
-// 		return ;
-// 	}
-// }
+	double error;
+	for (int i=0;i<N;i++) {
+		fit[0] += values[i];	
+		fit[1] -= pow(monkeys_rt_centered[i] - rt[i], 2.0);
+		// cumsum += pow(monkeys_rt_centered[i] - rt[i], 2.0);
+		// std::cout << cumsum << std::endl;
+	}
+
+	if (isnan(fit[0]) || isinf(fit[0]) || isinf(fit[1]) || isnan(fit[1]) || fit[0]<-100000000.0 || fit[1]<-100000000.0) {
+		fit[0]=-100000000.0;
+		fit[1]=-100000000.0;
+		return;
+	}
+	// else {
+	// 	fit[0]+=2000.0;
+	// 	fit[1]+=500.0;
+	// 	return ;
+	// }
+}

@@ -21,6 +21,12 @@ int main () {
 
 	std::map<char,int> map_monkeys_length_trial;
 	map_monkeys_length_trial['g'] = 12701;
+	map_monkeys_length_trial['m'] = 34752;
+	map_monkeys_length_trial['p'] = 27692;
+	map_monkeys_length_trial['r'] = 11634;
+	map_monkeys_length_trial['s'] = 13348;
+
+
 														
 
 	double fit [2] = {0.0, 0.0};
@@ -28,18 +34,8 @@ int main () {
 
 	int N =  map_monkeys_length_trial['g'];
 
-	sferes_call(fit, N, "../../data/data_txt/g.txt", 0.1, 0.1, 0.1);
+	sferes_call(fit, N, "../../data/data_txt/g.txt", 0.0, 0.0657192, 0.772174);
 	
-	// buffer = new unsigned int[length * sizeof(char) / sizeof(unsigned int)];	
-	// is.read((char*)buffer, length);
-	// is.close();
-	
-	// cout.write((char*)buffer, length);
-
-	// std::cout << buffer << std::endl;
-
-	// fit[0] = 0.0; fit[1] = 0.0;
- //  	sferes_call(fit, N, "data_meg/S3/", 0.000265578, 0.545996, 0, 0.899626, 0, 0.00186337, 0, 0.00347151);
- //  	std::cout << fit[0] << " " << fit[1] << std::endl;  
+	std::cout << fit[0] << " " << fit[1] << std::endl;  
    	return 0;
 }
