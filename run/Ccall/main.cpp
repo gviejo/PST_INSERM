@@ -4,8 +4,9 @@
 #include <vector>
 #include <sstream>
 #include <iterator>
+#include <map>
 #include <math.h>
-// #include "qlearning_call.cpp"
+#include "qlearning_call.cpp"
 // #include "bayesian_call.cpp"
 // #include "selection_call.cpp"
 // #include "mixture_call.cpp"
@@ -17,19 +18,17 @@ using namespace std;
 
 int main () {	
 
+
+	std::map<char,int> map_monkeys_length_trial;
+	map_monkeys_length_trial['g'] = 12701;
+														
+
 	double fit [2] = {0.0, 0.0};
-	int sari[100][8];
+	fit[0] = 0.0 ; fit[1] = 0.0;
 
-	int length = 0;
-	
-	ifstream is;
-	is.open("../../data/data_bin/s.bin", ios::binary | ios::in);
-	is.seekg(0, ios::end);
-	length = is.tellg();
-	is.seekg(0, ios::beg);
+	int N =  map_monkeys_length_trial['g'];
 
-	std::cout << length << std::endl;
-	std::cout << length / 16 << std::endl;
+	sferes_call(fit, N, "../../data/data_txt/g.txt", 0.1, 0.1, 0.1);
 	
 	// buffer = new unsigned int[length * sizeof(char) / sizeof(unsigned int)];	
 	// is.read((char*)buffer, length);
