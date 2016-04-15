@@ -61,7 +61,7 @@ rt = rt / (np.percentile(rt, 75) - np.percentile(rt, 25))
 # for t in xrange(6):
 # 	print rt[t], rtm[t]
 
-print log.sum(), -np.sum(np.power((rt - rtm), 2))
+print log.sum()+100000, -np.sum(np.power((rt - rtm), 2))+100000
 
 # figure()
 # plot(rt)
