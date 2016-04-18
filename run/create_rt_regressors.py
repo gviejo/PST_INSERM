@@ -30,14 +30,16 @@ rtmean = {}
 for s in monkeys.keys():
 	rt[s] = dict({'search':{},'repeat':{}})
 	rtmean[s] = dict({'search':{},'repeat':{}})
-	max_N_search = 0
-	max_N_repeat = 0
-
+	index = np.ones(len(data[s]))*-1
 	problem = data[s][0,4]
 	search = [data[s][0,8]]
 	repeat = []
+	phase = 0.0
+	start = 0
+	order = np.concatenate([np.ones(v)*(v-7) for v in [8,9,10,11,12]])
 	for t in xrange(1, len(data[s])):		
-		if data[s][t,4] == problem: # same problem
+		phase = data[s][t,2]-data[s][t-1,2] # Si phase == -1, on vient de changer de problem
+		if data[s][t,4] == problem and (phase == 0.0 or phase == 1.0): # same problem
 			if data[s][t,2] == 0.0: # search trial
 				search.append(data[s][t,8]) # append rt of search trial
 			elif data[s][t,2] == 1.0: # repeat trial
@@ -51,9 +53,19 @@ for s in monkeys.keys():
 				rt[s]['search'][nb_incorrect] = [np.array(search)]
 				rt[s]['repeat'][nb_incorrect] = [np.array(repeat)]
 				
+			# set index
+			if nb_incorrect <= 5:
+				if t-start <= 7:
+					index[start:t] = np.where(order==nb_incorrect)[0][0:t-start]
+				else:
+					index[start:start+nb_incorrect+7] = np.where(order==nb_incorrect)[0]
+			start = t
 			problem = data[s][t,4]  # number of new problem
 			search = [data[s][t,8]] 
 			repeat = [] 
+	
+	# concatenante index for least-square error for ccall
+	data[s] = np.hstack((data[s], np.vstack(index)))
 
 	t = 'search'
 	for l in rt[s][t].keys():
@@ -81,7 +93,7 @@ for s in monkeys.keys():
 	tmp = []
 	tmp2 = []
 	indice = []
-	for i in xrange(1,7):
+	for i in xrange(1,6):
 		tmp.append(np.hstack((rtmean[s]['search'][i][0],rtmean[s]['repeat'][i][0])))
 		tmp2.append(np.hstack((rtmean[s]['search'][i][1],rtmean[s]['repeat'][i][1])))
 		indice.append(np.ones(i+7)*i)
@@ -91,3 +103,4 @@ for s in monkeys.keys():
 	indice = np.concatenate(indice)
 	reg = np.vstack((indice, tmp, tmp2)).transpose()
 	np.savetxt("../data/data_txt/"+s+"_rt_reg.txt", reg)
+	np.savetxt("../data/data_txt/"+s+".txt", data[s], fmt='%f')

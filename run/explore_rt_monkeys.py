@@ -22,28 +22,28 @@ for s in monkeys.keys():
 
 rt = {}
 rtmean = {}
+count = {}
 
 for s in monkeys.keys():
 	rt[s] = dict({'search':{},'repeat':{}})
 	rtmean[s] = dict({'search':{},'repeat':{}})
-	max_N_search = 0
-	max_N_repeat = 0
-
+	count[s] = dict({'search':np.zeros(60),'repeat':np.zeros(60)})
 	problem = data[s][0,4]
 	search = [data[s][0,8]]
-	repeat = []
+	repeat = []	
+	phase = 0.0
 	for t in xrange(1, len(data[s])):		
-		if data[s][t,4] == problem: # same problem
+		phase = data[s][t,2]-data[s][t-1,2] # Si phase == -1, on vient de changer de problem
+		if data[s][t,4] == problem and (phase == 0.0 or phase == 1.0): # same problem
 			if data[s][t,2] == 0.0: # search trial
 				search.append(data[s][t,8]) # append rt of search trial
 			elif data[s][t,2] == 1.0: # repeat trial
 				repeat.append(data[s][t,8]) # append rt of repeat trial
-		else: # new problem
-			# if len(search[-1]) > max_N_search: 
-			# 	max_N_search = len(search[-1])
-			# if len(repeat[-1]) > max_N_repeat:
-			# 	max_N_repeat = len(repeat[-1])
+		else:
 			nb_incorrect = len(search) # number of search trial before correct
+			nb_repeat = len(repeat)
+			count[s]['search'][nb_incorrect] += 1
+			count[s]['repeat'][nb_repeat] += 1
 			if nb_incorrect in rt[s]['search'].keys(): # append search trial in corresponding error length
 				rt[s]['search'][nb_incorrect].append(np.array(search))
 				rt[s]['repeat'][nb_incorrect].append(np.array(repeat))
@@ -52,15 +52,16 @@ for s in monkeys.keys():
 				rt[s]['repeat'][nb_incorrect] = [np.array(repeat)]
 				
 			problem = data[s][t,4]  # number of new problem
-			search = [data[s][t,7]] 
+			search = [data[s][t,8]] 
 			repeat = [] 
+		
 
-	for t in ['search']:
-		for l in rt[s][t].keys():
-			rt[s][t][l] = np.array(rt[s][t][l])
-			rtmean[s][t][l] = np.zeros((2,l))
-			rtmean[s][t][l][0] = rt[s][t][l].mean(0)
-			rtmean[s][t][l][1] = rt[s][t][l].std(0)
+	t = 'search'
+	for l in rt[s][t].keys():
+		rt[s][t][l] = np.array(rt[s][t][l])
+		rtmean[s][t][l] = np.zeros((2,l))
+		rtmean[s][t][l][0] = rt[s][t][l].mean(0)
+		rtmean[s][t][l][1] = sem(rt[s][t][l])
 
 	t = 'repeat'
 	for l in rt[s][t].keys():
@@ -78,8 +79,8 @@ for s in monkeys.keys():
 
 
 
-figure(figsize = (20,15))
-
+# figure(figsize = (20,15))
+figure()
 colors = {'p':'blue','s':'cyan','r':'black','m':'red','g':'green'}
 
 for i in xrange(1,7):
@@ -88,7 +89,7 @@ for i in xrange(1,7):
 	# for s in ['p','s','r','m']:
 	# for s in ['p','m']:
 		# errorbar(range(i), rtmean[s]['search'][i][0], rtmean[s]['search'][i][1], fmt='o', label = str(s), color = colors[s])
-		# errorbar(range(i,i+8), rtmean[s]['repeat'][i][0], rtmean[s]['repeat'][i][1], fmt='*', color = colors[s])
+		# errorbar(range(i,i+7), rtmean[s]['repeat'][i][0], rtmean[s]['repeat'][i][1], fmt='*', color = colors[s])
 		plot(range(i), rtmean[s]['search'][i][0], 'o', label = str(s), color = colors[s])
 		plot(range(i,i+7), rtmean[s]['repeat'][i][0], '*', color = colors[s])
 		plot(range(i+7), np.hstack((rtmean[s]['search'][i][0],rtmean[s]['repeat'][i][0])), '-', color = colors[s])
@@ -96,17 +97,19 @@ for i in xrange(1,7):
 	title(str(i)+" SEARCH | 8 REPEAT")
 	legend()
 
-# for k in xrange(1,6):
-# 	subplot(5,2,sub)
-# 	for m in rtmean.keys():
-# 		# errorbar(range(k), rtmean[m]['search'][k][0], rtmean[m]['search'][k][1], label = str(k))
-# 		plot(range(k), rtmean[m]['search'][k][0], 'o-', label = str(m))
-# 	legend()
-# 	subplot(5,2,sub+1)
-# 	for m in rtmean.keys():
-# 		# errorbar(range(k), rtmean[m]['search'][k][0], rtmean[m]['search'][k][1], label = str(k))
-# 		plot(range(8), rtmean[m]['repeat'][k][0,0:8], 'o-', label = str(m))	
-# 	legend()
 
-# 	sub+=2
+figure()
+ind = 1
+for k in count.keys():
+	subplot(2,3,ind)
+	plot(count[k]['search'][0:10], 'o-', label = 'Search')
+	plot(count[k]['repeat'][0:10], '*-', label = 'Repeat')
+	ylabel("Count")
+	xlabel("Lenght of search/repeat bloc")
+	legend()
+	ind+=1
+	title(k)
+
 show()
+
+
