@@ -32,10 +32,10 @@ int main () {
 	double fit [2] = {0.0, 0.0};
 	fit[0] = 0.0 ; fit[1] = 0.0;
 
-	int N =  map_monkeys_length_trial['g'];
-
-	sferes_call(fit, N, "../../data/data_txt/g", 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1);
+	int N =  map_monkeys_length_trial['s'];
 	
-	std::cout << fit[0]+10000 << " " << fit[1]+50000 << std::endl;  
+	sferes_call(fit, N, "../../data/data_txt/s", 0.671374, 0.12509, 0.170704, 0.551698, 0.722591, 0.138297, 0.271538, 0.659637, 0.539239, 0.686598 );
+	
+	std::cout << fit[0] << " " << fit[1] << std::endl;  
    	return 0;
 }
