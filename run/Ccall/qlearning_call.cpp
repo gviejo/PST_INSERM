@@ -62,7 +62,7 @@ double entropy(double *p) {
 	return -tmp;
 }
 // void sferes_call(double * fit, const char* data_dir, double alpha_, double beta_)
-void sferes_call(double * fit, int N, const char* data_dir, double alpha_, double beta_, double sigma_=1.0) {
+void sferes_call(double * fit, int N, const char* data_dir, double alpha_, double beta_, double sigma_, double kappa_, double shift_) {
 	
 	///////////////////	
 	// parameters
@@ -70,87 +70,168 @@ void sferes_call(double * fit, int N, const char* data_dir, double alpha_, doubl
 	// double gamma=0.0+gamma_*(0.99-0.00); //alpha -
 	double beta=0.0+beta_*(100.0-0.0);
 	double sigma=0.0+(20.0-0.0)*sigma_;
+	double kappa=0.0+(1.0-0.0)*kappa_;
+	double shift=0.0+(1.0-0.0)*shift_;
 	// double omega=0.0+omega_*(0.999999-0.0);
 	// std::cout << alpha << " " << beta << " " << std::endl;
 	int nb_trials = N;
 	int n_state = 2;
 	int n_action = 4;
 	int n_r = 2;	
+	int problem;
 	///////////////////
-	int sari [N][8];	
-	double monkeys_rt_centered [N];	
+	int sari [N][5];
+	double mean_rt[50][3];		
 	double values [N]; // log action probabilities according to monkeys
 	double rt [N]; // rt du model	
 	double p_a_mf [n_action];
+	double spatial_biases [n_action];
 
-	std::ifstream data_file(data_dir);
+	const char* _data_dir = data_dir;
+	std::string file1 = _data_dir;
+	std::string file2 = _data_dir;
+	file1.append(".txt");
+	file2.append("_rt_reg.txt");	
+	std::ifstream data_file1(file1.c_str());
 	string line;
-	if (data_file.is_open())
+	if (data_file1.is_open())
 	{ 
 		for (int i=0;i<N;i++) 
 		{  
-			getline (data_file,line);			
+			getline (data_file1,line);			
 			stringstream stream(line);
 			std::vector<float> values_(
      			(std::istream_iterator<float>(stream)),
      			(std::istream_iterator<float>()));
-			for (int j=0;j<8;j++)
-			{
-				sari[i][j] = (int)values_[j];				
-			}			
-			monkeys_rt_centered[i] = values_[8];
+
+			sari[i][0] = (int)values_[3]; // reward
+			sari[i][1] = (int)values_[4]; // problem
+			sari[i][2] = (int)values_[5]; // action
+			sari[i][3] = (int)values_[9]; // index
+			sari[i][4] = (int)values_[2]; // phase
+
 		}
-	data_file.close();	
-	}
-
-	// double cumsum = 0.0;	
-
-	for (int i=0;i<1;i++)	
-	{		
-		// START BLOC //
-		double values_mf [n_action];	
-		int s, a, r;		
-		double Hf = 0.0;		
-		for (int m=0;m<n_action;m++) {
-				values_mf[m] = 0.0;			
-		}		
-		// START TRIAL //
-		// for (int j=0;j<6;j++) 				
-		for (int j=0;j<nb_trials;j++) 				
-		{							
-			// COMPUTE VALUE
-			s = sari[j][4]-1; // s is the solution to the problem
-			a = sari[j][5]-1; // a is the action performed by the monkey
-			r = sari[j][3];	// r is the amout of reward						
-			softmax(p_a_mf, values_mf, beta);
-			double Hf = entropy(p_a_mf);
-			
-			values[j] = log(p_a_mf[a]);						
-			rt[j] =  Hf;
-			
-			// MODEL FREE	
-			double reward;
-			if (r == 0) {
-				reward = -1.0;
-			} else if (r == 1) {
-				reward = 1.0;
+	data_file1.close();	
+	}	
+	std::ifstream data_file2(file2.c_str());	
+	if (data_file2.is_open())
+	{
+		for (int i=0;i<50;i++) 
+		{  
+			getline (data_file2,line);			
+			stringstream stream(line);
+			std::vector<float> values_(
+				(std::istream_iterator<float>(stream)),
+				(std::istream_iterator<float>()));
+			for (int j=0;j<3;j++) {
+				mean_rt[i][j] = values_[j];
 			}
-			double delta = reward - values_mf[a];
-			values_mf[a]+=(alpha*delta);
 		}
+	data_file2.close();	
+	}		
+
+	double values_mf [n_action];	
+	int s, a, r;		
+	problem = sari[0][1];
+	double Hf = 0.0;
+	for (int m=0;m<n_action;m++) {
+		values_mf[m] = 0.0;
+		spatial_biases[m] = 1./n_action;
+	}	
+
+	for (int i=0;i<nb_trials;i++) 	
+	// for (int i=0;i<12;i++) 	
+	{						
+		if (sari[i][1] != problem) {
+			if (sari[i][4]-sari[i-1][4] < 0.0) {				
+				// START BLOC //
+				problem = sari[i][1];				
+				
+				// RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
+				double summ = 0.0;
+				for (int m=0;m<n_action;m++) { // normalise spatial bias
+					summ+=spatial_biases[m];
+				}
+				
+				for (int m=0;m<n_action;m++) {					
+					values_mf[m] = spatial_biases[m]/summ;					
+					// std::cout << values_mf[m] << " ";
+					
+				}
+				// std::cout << std::endl;
+				// shift bias
+				values_mf[sari[i-1][2]-1] *= (1.0-shift);
+				// spatial biases update
+				spatial_biases[sari[i][2]-1] += 1.0;
+			}
+		}		
+		// START TRIAL //		
+		// COMPUTE VALUE		
+		a = sari[i][2]-1;
+		// std::cout << "ACTION=" << a << std::endl;
+		r = sari[i][0];						
+		// COMPUTE VALUE
+
+		softmax(p_a_mf, values_mf, beta);
+		double Hf = entropy(p_a_mf);
+		
+		values[i] = log(p_a_mf[a]);						
+		rt[i] =  Hf;
+		// for (int j=0;j<4;j++) {
+		// 	std::cout << values_mf[j] << " ";
+		// }		
+		// std::cout << std::endl;
+		// std::cout << rt[i] << std::endl;
+		
+		// MODEL FREE	
+		double reward;
+		if (r == 0) {
+			reward = -1.0;
+		} else if (r == 1) {
+			reward = 1.0;
+		}
+		// std::cout << " R= "<< reward << std::endl;
+		// std::cout << values_mf[a] << std::endl;
+		double delta = reward - values_mf[a];
+		// std::cout << "delta =" << delta << std::endl;
+		values_mf[a]+=(alpha*delta);
+		// std::cout << "mf2 = ";
+		// for (int j=0;j<4;j++) {
+		// 	std::cout << values_mf[j] << " ";
+		// }
+		// std::cout << std::endl;	
+		for (int m=0;m<n_action;m++) {
+			if (m != a) {				
+				values_mf[m] += (1.0-kappa)*((1.0/n_action)-values_mf[m]);
+			}
+		}
+		// std::cout << "mf3 = ";
+		// for (int j=0;j<4;j++) {
+		// 	std::cout << values_mf[j] << " ";
+		// }
+		// std::cout << std::endl;	
+
 	}
 	
 	// ALIGN TO MEDIAN
 	alignToMedian(rt, N);	
 	
-	
+	// REARRANGE TO REPRESENTATIVE STEPS
+	double mean_model [50];
+	double sum_tmp [50];
 
-	double error;
 	for (int i=0;i<N;i++) {
-		fit[0] += values[i];	
-		fit[1] -= pow(monkeys_rt_centered[i] - rt[i], 2.0);
-		// cumsum += pow(monkeys_rt_centered[i] - rt[i], 2.0);
-		// std::cout << cumsum << std::endl;
+		if (sari[i][3] >= 0.0) {
+			mean_model[sari[i][3]] += rt[i];
+			sum_tmp[sari[i][3]] += 1.0;
+		}
+		fit[0] += values[i];
+	}
+	for (int i=0;i<50;i++) {
+		// std::cout << mean_model[i] << " ";
+		mean_model[i] = mean_model[i]/sum_tmp[i];
+		// std::cout << mean_model[i] << std::endl;
+		fit[1] -= pow(mean_model[i] - mean_rt[i][1], 2.0);
 	}
 
 	if (isnan(fit[0]) || isinf(fit[0]) || isinf(fit[1]) || isnan(fit[1]) || fit[0]<-100000000.0 || fit[1]<-100000000.0) {
@@ -158,9 +239,4 @@ void sferes_call(double * fit, int N, const char* data_dir, double alpha_, doubl
 		fit[1]=-100000000.0;
 		return;
 	}
-	// else {
-	// 	fit[0]+=2000.0;
-	// 	fit[1]+=500.0;
-	// 	return ;
-	// }
 }

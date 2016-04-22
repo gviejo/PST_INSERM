@@ -34,14 +34,14 @@ void alignToMedian(double *daArray, int iSize) {
 }
 void softmax(double *p, double *v, double b) {
 	double sum = 0.0;
-	double tmp[5];
+	double tmp[4];
 	// for (int i=0;i<5;i++) std::cout << v[i] << " "; std::cout << std::endl;
-	for (int i=0;i<5;i++) {
+	for (int i=0;i<4;i++) {
 		tmp[i] = exp(v[i]*b);
 		sum+=tmp[i];		
 	}		
 	// for (int i=0;i<5;i++) std::cout << tmp[i] << " "; std::cout << std::endl;
-	for (int i=0;i<5;i++) {
+	for (int i=0;i<4;i++) {
 		p[i] = tmp[i]/sum;		
 	}
 }
@@ -235,13 +235,17 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 	// REARRANGE TO REPRESENTATIVE STEPS
 	double mean_model [50];
 	double sum_tmp [50];
+
 	for (int i=0;i<N;i++) {
-		mean_model[sari[i][3]] += rt[i];
-		sum_tmp[sari[i][3]] += 1.0;
+		if (sari[i][3] >= 0.0) {
+			mean_model[sari[i][3]] += rt[i];
+			sum_tmp[sari[i][3]] += 1.0;
+		}
 		fit[0] += values[i];
 	}
 	for (int i=0;i<50;i++) {
 		mean_model[i] = mean_model[i]/sum_tmp[i];
+		// std::cout << mean_model[i] << std::endl;
 		fit[1] -= pow(mean_model[i] - mean_rt[i][1], 2.0);
 	}
 
