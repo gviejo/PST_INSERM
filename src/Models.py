@@ -51,7 +51,7 @@ class FSelection():
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
         for i in xrange(self.N):
-        # for i in xrange(659):              
+        # for i in xrange(21):              
             if self.sari[i][1] != self.problem:                
                 if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
                     # START BLOC
@@ -66,7 +66,7 @@ class FSelection():
 
             # START TRIAL
             self.current_action = self.sari[i][2]-1
-            # print "ACTION=", self.current_action
+            # print "PROBLEM=", self.problem, " ACTION=", self.current_action
             r = self.sari[i][0]            
 
             self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
@@ -110,6 +110,7 @@ class FSelection():
                 self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
                 # print j+1, " p_ak=", self.p_ak[j+1], " p_decision=", self.p_decision[j+1], " p_retrieval=", self.p_retrieval[0]
             
+            # print np.dot(self.p_decision,self.p_ak)
             self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
             # print self.value[i]
             self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
@@ -159,8 +160,8 @@ class FSelection():
         self.values_net = self.p_a_mb+self.values_mf
         tmp = np.exp(self.values_net*float(self.parameters['beta']))
         
-        # print "tmp=", tmp
-        # nombre de inf
+        # print "fusion ", self.values_mf[self.current_action], " ", self.p_a_mb[self.current_action]
+        # print "tmp =", tmp
         ninf = np.isinf(tmp).sum()        
 
         if np.isinf(tmp).sum():            
@@ -168,7 +169,7 @@ class FSelection():
         else :
             self.p_a_final = tmp/np.sum(tmp)   
         
-        if 0 in self.p_a:            
+        if np.sum(self.p_a_final == 0.0):
             self.p_a_final+=1e-8;
             self.p_a_final = self.p_a_final/self.p_a_final.sum()
         # print "p_afinal =", self.p_a_final

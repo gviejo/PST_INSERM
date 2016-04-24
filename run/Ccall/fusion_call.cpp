@@ -72,7 +72,7 @@ void fusion(double *p_a, double *mb, double *mf, double beta) {
 	int tmp2[4];
 	double sum = 0.0;
 	double ninf = 0;	
-
+	// std::cout << "fusion " << mf[0] << " " << mb[0] << std::endl;
 	// std::cout << "tmp=";
 	for (int i=0;i<4;i++) {				
 		tmp[i] = exp((mb[i]+mf[i])*beta);
@@ -99,13 +99,10 @@ void fusion(double *p_a, double *mb, double *mf, double beta) {
 		}
 	}
 	else {
-		// std::cout << "p_afinal=";
 		for (int i=0;i<4;i++) {				
-			p_a[i] = tmp[i]/sum;
-			// std::cout << p_a[i] << " ";
+			p_a[i] = tmp[i]/sum;		
 		}		
-	}	
-	// std::cout << std::endl;
+	}		
 	for (int i=0;i<4;i++) {
 		if (p_a[i] == 0) {
 			sum = 0.0;
@@ -119,6 +116,11 @@ void fusion(double *p_a, double *mb, double *mf, double beta) {
 			return;
 		}
 	}
+	// std::cout << " p_afinal = ";
+	// for (int i=0;i<4;i++) {
+	// 	std::cout <<p_a[i] << " ";
+	// }
+	// std::cout << std::endl;
 }
 double entropy(double *p) {
 	double tmp = 0.0;
@@ -236,7 +238,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	
 
 	for (int i=0;i<nb_trials;i++) 
-	// for (int i=0;i<659;i++) 
+	// for (int i=0;i<21;i++) 
 	{						
 		if (sari[i][1] != problem) {
 			if (sari[i][4]-sari[i-1][4] < 0.0) {
@@ -264,7 +266,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		// START TRIAL //
 		// COMPUTE VALUE		
 		a = sari[i][2]-1;
-		// std::cout << "ACTION=" << a << std::endl;
+		// std::cout << "PROBLEM=" << problem << " ACTION=" << a << std::endl;
 		r = sari[i][0];						
 		double Hb = max_entropy;		
 		for (int m=0;m<n_action;m++) {
@@ -359,6 +361,8 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			// std::cout << k+1 << " p_ak=" << p_ak[k+1] << " p_decision=" << p_decision[k+1] << "p_retrieval=" << p_retrieval[k+1] << std::endl;
 		}		
 
+		// std::cout << sum_prod(p_ak, p_decision, n_element+1) << std::endl;
+
 		values[i] = log(sum_prod(p_ak, p_decision, n_element+1));
 		// std::cout << values[i] << std::endl;
 
@@ -439,7 +443,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	}
 	for (int i=0;i<50;i++) {
 		mean_model[i] = mean_model[i]/sum_tmp[i];
-		std::cout << mean_model[i] << std::endl;
+		// std::cout << mean_model[i] << std::endl;
 		fit[1] -= pow(mean_model[i] - mean_rt[i][1], 2.0);
 	}
 
