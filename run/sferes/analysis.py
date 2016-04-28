@@ -47,6 +47,31 @@ front.constructParetoFrontier('log')
 
 figure()
 i = 1
+for m in front.pareto.keys():
+	subplot(2,2,i)
+	for s in front.pareto[m].keys():
+		plot(front.pareto[m][s][:,3], front.pareto[m][s][:,4], 'o-')
+	i+=1
+	title(m)
+	# ylim(-20, 0.0)
+
+figure()
+subjects = front.pareto['qlearning'].keys()
+i = 1
+for s in subjects:
+	subplot(2,3,i)
+	for m in front.pareto.keys():
+		if s in front.pareto[m].keys():
+			plot(front.pareto[m][s][:,3], front.pareto[m][s][:,4], 'o-', label = m)
+	i+=1
+	legend(loc= 'best')
+	title(s)		
+	ylim(-20, 0.0)
+
+show()
+
+figure()
+i = 1
 for s in front.monkeys.keys():
 	subplot(2,3,i)
 	plot(front.rt_reg_monkeys[s][:,1], 'o-', color = 'black')
@@ -54,13 +79,13 @@ for s in front.monkeys.keys():
 		if s in front.pareto[m].keys():
 			for t in xrange(front.pareto[m][s].shape[0]):
 				parameters = dict({k:v for k,v in zip(front.p_order[m],front.pareto[m][s][t][5:])})				
-				model = FSelection()
+				model = front.models[m]
 				fit = model.sferes_call(front.monkeys[s], front.rt_reg_monkeys[s], parameters)
 				print s, m, t
 				print fit[0], fit[1]
 				print front.pareto[m][s][t][3], front.pareto[m][s][t][4]
 				plot(model.rt_model, 'o-', alpha = 0.5)
-				sleep(1.0)
+				
 	i+=1
 
 show()

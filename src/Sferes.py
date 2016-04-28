@@ -57,17 +57,17 @@ class pareto():
                 self.monkeys[s.split(".")[0]] = np.genfromtxt("../../data/data_txt/"+s)
                 self.N[s.split(".")[0]] = len(self.monkeys[s.split(".")[0]])               
 
-        self.models = dict({"fusion":FSelection()})
-                            # "qlearning":QLearning(),
-                            # "bayesian":BayesianWorkingMemory(),
+        self.models = dict({"fusion":FSelection(),
+                            "qlearning":QLearning(),
+                            "bayesian":BayesianWorkingMemory(),
                             # "selection":KSelection(),
-                            # "mixture":CSelection()})
+                            "mixture":CSelection()})
 
         self.p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
                             'qlearning':['alpha','beta', 'sigma'],
                             'bayesian':['length','noise','threshold', 'sigma'],
                             'selection':['beta','eta','length','threshold','noise','sigma', 'sigma_rt'],
-                            'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma']})
+                            'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift']})
 
         self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture']
         self.colors_m = dict({'fusion':'r', 'bayesian':'g', 'qlearning':'grey', 'selection':'b', 'mixture':'y'})
@@ -220,9 +220,9 @@ class pareto():
                 #     best_aic = 2*best_log - float(len(self.p_order[m]))*2.0
                 #     worst_aic = 2*worst_log - float(len(self.p_order[m]))*2.0
                 #     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_aic)/(best_aic - worst_aic)
-                # self.pareto[m][s][:,4] = 1.0 - (-self.pareto[m][s][:,4])/(np.power(2*self.rt_reg_monkeys[s][:,1], 2).sum())
-                # # on enleve les points negatifs
-                # self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
+                # self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(np.power(2*self.rt_reg_monkeys[s][:,1], 2).sum()))
+                # # on enleve les points negatifs                
+                # self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,4]>0).prod(1)==1]
 
 
     def constructMixedParetoFrontier(self):
