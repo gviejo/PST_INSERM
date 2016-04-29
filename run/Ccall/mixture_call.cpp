@@ -334,6 +334,12 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	double mean_model [50];
 	double sum_tmp [50];
 
+	for (int i=0;i<50;i++) {
+		mean_model[i] = 0;
+		sum_tmp[i] = 0;
+	}
+
+
 	for (int i=0;i<N;i++) {
 		if (sari[i][3] >= 0.0) {
 			mean_model[sari[i][3]] += rt[i];
