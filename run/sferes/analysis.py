@@ -53,7 +53,7 @@ for m in front.pareto.keys():
 		plot(front.pareto[m][s][:,3], front.pareto[m][s][:,4], 'o-')
 	i+=1
 	title(m)
-	# ylim(-20, 0.0)
+	ylim(-20, 0.0)
 
 figure()
 subjects = front.pareto['qlearning'].keys()
@@ -68,7 +68,7 @@ for s in subjects:
 	title(s)		
 	ylim(-20, 0.0)
 
-show()
+# show()
 
 figure()
 i = 1
@@ -76,6 +76,7 @@ for s in front.monkeys.keys():
 	subplot(2,3,i)
 	plot(front.rt_reg_monkeys[s][:,1], 'o-', color = 'black')
 	for m in front.pareto.keys():
+	# for m in ['mixture']:
 		if s in front.pareto[m].keys():
 			for t in xrange(front.pareto[m][s].shape[0]):
 				parameters = dict({k:v for k,v in zip(front.p_order[m],front.pareto[m][s][t][5:])})				

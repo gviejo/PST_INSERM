@@ -193,7 +193,7 @@ class FSelection():
     def chooseAction(self, state):
         self.state[-1].append(state)
         self.current_state = convertStimulus(state)-1
-        self.p = self.uniform[:,:,:]
+        self.p = self.uniform[:,:]
         self.Hb = self.max_entropy
         self.p_a_mf = SoftMaxValues(self.values_mf[self.current_state], self.parameters['gamma'])
         self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
@@ -281,7 +281,7 @@ class CSelection():
         self.N = len(self.sari)        
         self.mean_rt = mean_rt
         self.value = np.zeros(self.N)
-        self.reaction = np.zeros(self.n_action)
+        self.reaction = np.zeros(self.N)
         self.values_mf =  np.zeros(self.n_action)
         self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
         self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
@@ -292,12 +292,15 @@ class CSelection():
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
+        self.w = self.parameters['weight']
         for i in xrange(self.N):
+        # for i in xrange(9):
             if self.sari[i][1] != self.problem:
                 if self.sari[i][4]-self.sari[i-1][4] < 0.0:
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
+                    self.w = self.parameters['weight']
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
                     # print "biais", self.spatial_biases
                     self.values_mf = self.spatial_biases/self.spatial_biases.sum()
@@ -310,7 +313,7 @@ class CSelection():
             r = self.sari[i][0]            
                         
             # BAYESIAN CALL
-            self.p = self.uniform[:,:,:]
+            self.p = self.uniform[:,:]
             self.Hb = self.max_entropy
             self.nb_inferences = 0  
             self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
@@ -356,7 +359,7 @@ class CSelection():
         p_a_r = p_ra/p_r
         self.p_a_mb = p_a_r[:,1]/p_a_r[:,0]
         self.p_a_mb = self.p_a_mb/np.sum(self.p_a_mb)
-        self.Hb = -np.sum(p_a_mb*np.log2(p_a_mb))
+        self.Hb = -np.sum(self.p_a_mb*np.log2(self.p_a_mb))
 
     def fusionModule(self):
         np.seterr(invalid='ignore')
@@ -423,7 +426,7 @@ class CSelection():
 class BayesianWorkingMemory():
     """ Bayesian Working memory strategy
     """
-    
+
     def __init__(self):
         self.n_action = 4
         self.n_r = 2
@@ -439,7 +442,7 @@ class BayesianWorkingMemory():
         self.N = len(self.sari)        
         self.mean_rt = mean_rt
         self.value = np.zeros(self.N)
-        self.reaction = np.zeros(self.n_action)
+        self.reaction = np.zeros(self.N)
         self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
         self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
         self.nb_inferences = 0
@@ -449,6 +452,7 @@ class BayesianWorkingMemory():
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
         for i in xrange(self.N):
+        # for i in xrange(709):            
             if self.sari[i][1] != self.problem:
                 if self.sari[i][4]-self.sari[i-1][4] < 0.0:
                     # START BLOC
@@ -457,11 +461,11 @@ class BayesianWorkingMemory():
 
             # START TRIAL
             self.current_action = self.sari[i][2]-1
-            # print "PROBLEM=", self.problem, " ACTION=", self.current_action
+            # print i, "PROBLEM=", self.problem, " ACTION=", self.current_action
             r = self.sari[i][0]            
                         
             # BAYESIAN CALL
-            self.p = self.uniform[:,:,:]
+            self.p = self.uniform[:,:]
             self.Hb = self.max_entropy
             self.nb_inferences = 0  
             self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
@@ -469,6 +473,7 @@ class BayesianWorkingMemory():
             while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
                 self.inferenceModule()
                 self.evaluationModule()                    
+                # print self.p_a_mb
 
             
             self.value[i] = float(np.log(self.p_a_mb[self.current_action])) 
@@ -507,7 +512,7 @@ class BayesianWorkingMemory():
         p_a_r = p_ra/p_r
         self.p_a_mb = p_a_r[:,1]/p_a_r[:,0]
         self.p_a_mb = self.p_a_mb/np.sum(self.p_a_mb)
-        self.Hb = -np.sum(p_a_mb*np.log2(p_a_mb))
+        self.Hb = -np.sum(self.p_a_mb*np.log2(self.p_a_mb))
 
     def updateValue(self, reward):
         r = int((reward==1)*1)
@@ -822,7 +827,7 @@ class KSelection():
         self.vpi = computeVPIValues(self.values_mf[self.current_state], self.covariance['cov'].diagonal()[t:t+self.n_action])
         self.r_rate = self.reward_rate[self.current_state]        
         if np.sum(self.vpi > self.reward_rate[self.current_state]):                
-            self.p = self.uniform[:,:,:]
+            self.p = self.uniform[:,:]
             self.Hb = self.max_entropy            
             self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)
             while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:
@@ -855,7 +860,7 @@ class KSelection():
         self.used = -1
         if np.sum(vpi > self.reward_rate[self.current_state]):
             self.used = 1
-            self.p = self.uniform[:,:,:]
+            self.p = self.uniform[:,:]
             self.Hb = self.max_entropy            
             self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)
             while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:

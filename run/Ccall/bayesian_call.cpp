@@ -69,7 +69,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 	int n_r = 2;	
 	int problem; 
 	///////////////////
-	int sari [N][4];	
+	int sari [N][5];	
 	double mean_rt [50][3];	
 	double values [N]; // action probabilities according to subject
 	double rt [N]; // rt du model	
@@ -97,6 +97,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 			sari[i][1] = (int)values_[4];
 			sari[i][2] = (int)values_[5];
 			sari[i][3] = (int)values_[9];
+			sari[i][4] = (int)values_[2];
 		}
 	data_file1.close();	
 	}	
@@ -128,17 +129,20 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 	int a, r;		
 
 	for (int i=0;i<N;i++) 	
+	// for (int i=0;i<709;i++) 	
 	{				
 		if (sari[i][1] != problem) {
-			// START BLOC //
-			problem = sari[i][1];
-			n_element = 0;			
+			if (sari[i][4]-sari[i-1][4] < 0.0) {
+				// START BLOC //
+				problem = sari[i][1];
+				n_element = 0;			
+			}
 		}
 		// START TRIAL //		
 		// COMPUTE VALUE
 		a = sari[i][2]-1; // a is the action performed by the monkey
 		r = sari[i][0];	// r is the amout of reward						
-
+		// std::cout << i << " " <<  "PROBLEM=" << problem << " ACTION=" << a << std::endl;
 
 		for (int m=0;m<n_action;m++) {
 			p[m][0] = 1./(n_action*n_r); 
@@ -189,7 +193,9 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 			}
 			for(int m=0;m<n_action;m++) {
 				p_a_mb[m] = values_mb[m]/sum;
-			}				
+				// std::cout << p_a_mb[m] << " ";
+			}
+			// std::cout << std::endl;
 			entrop = entropy(p_a_mb);
 			k+=1;				
 		}	
@@ -198,7 +204,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 		float N = nb_inferences+1.0;
 		// if (isnan(H)) H = 0.005;
 		values[i] = log(p_a_mb[a]);			
-
+		// std::cout << values[i] << std::endl;
 		rt[i] =  pow(log2(N), sigma)+H;
 
 		// UPDATE MEMORY 						

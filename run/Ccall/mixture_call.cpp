@@ -68,7 +68,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	double shift=0.0+(1.0-0.0)*shift_;
 
 	
-	// std::cout << "noise=" << noise << " length=" << length << " threshold=" << threshold << " sigma=" << sigma << std::endl;
+	// std::cout << "alpha=" << alpha << " beta =" << beta << " weight=" << weight << " noise=" << noise << " length=" << length << " threshold=" << threshold << " sigma=" << sigma << std::endl;
 
 	int nb_trials = N;
 	int n_state = 1;
@@ -76,7 +76,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	int n_r = 2;	
 	int problem; 
 	///////////////////
-	int sari [N][4];	
+	int sari [N][5];	
 	double mean_rt [50][3];	
 	double values [N]; // action probabilities according to subject
 	double rt [N]; // rt du model	
@@ -106,6 +106,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			sari[i][1] = (int)values_[4];
 			sari[i][2] = (int)values_[5];
 			sari[i][3] = (int)values_[9];
+			sari[i][4] = (int)values_[2];
 		}
 	data_file1.close();	
 	}	
@@ -145,28 +146,31 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	}	
 
 	for (int i=0;i<nb_trials;i++) 	
+	// for (int i=0;i<9;i++) 	
 	{				
 		if (sari[i][1] != problem) {
-			// START BLOC //
-			problem = sari[i][1];
-			n_element = 0;			
-			weigh = weight;
-			// RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-			double summ = 0.0;
-			for (int m=0;m<n_action;m++) { // normalise spatial bias
-				summ+=spatial_biases[m];
-			}
-			
-			for (int m=0;m<n_action;m++) {					
-				values_mf[m] = spatial_biases[m]/summ;					
-				// std::cout << values_mf[m] << " ";
+			if (sari[i][4]-sari[i-1][4] < 0.0) {
+				// START BLOC //
+				problem = sari[i][1];
+				n_element = 0;			
+				weigh = weight;
+				// RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
+				double summ = 0.0;
+				for (int m=0;m<n_action;m++) { // normalise spatial bias
+					summ+=spatial_biases[m];
+				}
 				
+				for (int m=0;m<n_action;m++) {					
+					values_mf[m] = spatial_biases[m]/summ;					
+					// std::cout << values_mf[m] << " ";
+					
+				}
+				// std::cout << std::endl;
+				// shift bias
+				values_mf[sari[i-1][2]-1] *= (1.0-shift);
+				// spatial biases update
+				spatial_biases[sari[i][2]-1] += 1.0;
 			}
-			// std::cout << std::endl;
-			// shift bias
-			values_mf[sari[i-1][2]-1] *= (1.0-shift);
-			// spatial biases update
-			spatial_biases[sari[i][2]-1] += 1.0;
 		}
 		// START TRIAL //		
 		// COMPUTE VALUE
@@ -256,7 +260,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		float N = nb_inferences+1.0;
 		// if (isnan(H)) H = 0.005;
 		values[i] = log(p_a_final[a]);			
-
+		// std::cout << values[i] << std::endl;
 		rt[i] =  pow(log2(N), sigma)+H;
 
 		// UPDATE WEIGHT
