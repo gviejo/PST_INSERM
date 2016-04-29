@@ -61,7 +61,7 @@ double sigmoide(double Hb, double Hf, double n, double i, double t, double g) {
 	double x = 2.0 * -log2(0.25) - Hb - Hf;
 	// std::cout << pow((n-i),t) <<  std::endl;
 	double tmp = 1.0/(1.0+(pow((n-i),t)*exp(-x*g)));
-	// std::cout << " n=" << n << " i=" << i << "Hb = "<< Hb << ", Hf = " << Hf << " x=" << x << " p(A)=" << tmp << " threshold = " << t << " gamma = " << g << std::endl;
+	// std::cout << " n=" << n << " i=" << i << "Hb = "<< Hb << ", Hf = " << Hf << " x=" << x << " p(A)=" << tmp << " threshold = " << t << " gain = " << g << std::endl;
 	// std::cout << tmp << std::endl;
 	return tmp;
 	// return 1.0/(1.0+((n-i)*t)*exp(-x*g));
@@ -144,7 +144,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	double noise=0.0+noise_*(0.1-0.0);
 	int length=1+(10-1)*length_;
 	double gain=0.00001+(10000.0-0.00001)*gain_;
-	double threshold=0.00001+(1000.0-0.00001)*threshold_;
+	double threshold=0.0+(20.0-0.0)*threshold_;
 	double sigma=0.0+(20.0-0.0)*sigma_;	
 	double gamma=0.0+(100.0-0.0)*gamma_;
 	double kappa=0.0+(1.0-0.0)*kappa_;
@@ -445,11 +445,15 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		mean_model[i] = mean_model[i]/sum_tmp[i];
 		// std::cout << mean_model[i] << std::endl;
 		fit[1] -= pow(mean_model[i] - mean_rt[i][1], 2.0);
-	}
-
-	if (isnan(fit[0]) || isinf(fit[0]) || isinf(fit[1]) || isnan(fit[1]) || fit[0]<-100000000.0 || fit[1]<-100000000.0) {
-		fit[0]=-100000000.0;
-		fit[1]=-100000000.0;
+	}	
+	// if (isnan(fit[0]) || isinf(fit[0]) || isinf(fit[1]) || isnan(fit[1]) || fit[0]<-100000000.0 || fit[1]<-100000000.0) {
+	// 	fit[0]=-100000000.0;
+	// 	fit[1]=-100000000.0;
+	// 	return;
+	// }
+	if (isnan(fit[0]) || isinf(fit[0]) || isinf(fit[1]) || isnan(fit[1])) {
+		fit[0]=-1e+15;
+		fit[1]=-1e+15;
 		return;
 	}
 }
