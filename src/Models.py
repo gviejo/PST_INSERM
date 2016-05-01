@@ -6,6 +6,7 @@
 
 import numpy as np
 import sys
+from time import sleep
 
 def SoftMaxValues(values, beta):
     tmp = np.exp(values*float(beta))
@@ -23,7 +24,7 @@ class FSelection():
         self.bounds = dict({"beta":[0.0, 100.0], # temperature for final decision                            
                             'alpha':[0.0, 1.0],
                             "length":[1, 10],
-                            "threshold":[0.00001, 1000.0], # sigmoide parameter
+                            "threshold":[0.0, 20.0], # sigmoide parameter
                             "noise":[0.0, 0.1],
                             "gain":[0.00001, 10000.0], # sigmoide parameter 
                             "sigma":[0.0, 20.0],
@@ -50,8 +51,7 @@ class FSelection():
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
-        for i in xrange(self.N):
-        # for i in xrange(21):              
+        for i in xrange(self.N):        
             if self.sari[i][1] != self.problem:                
                 if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
                     # START BLOC
@@ -93,6 +93,7 @@ class FSelection():
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
             reaction[0] = float(H)        
+            # reaction[0] = H
             # print 0, " p_ak=", self.p_ak[0], " p_decision=", self.p_decision[0] , " p_retrieval=", self.p_retrieval[0]      
             # print "N element =", self.n_element
             for j in xrange(self.n_element):            
@@ -104,6 +105,7 @@ class FSelection():
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
                 N = self.nb_inferences+1.0
                 reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
+                # reaction[j+1] = H
                 self.sigmoideModule()
                 self.p_sigmoide[j+1] = self.pA            
                 self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
@@ -113,6 +115,7 @@ class FSelection():
             # print np.dot(self.p_decision,self.p_ak)
             self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
             # print self.value[i]
+            # print self.p_decision
             self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
             # print self.reaction[i]
             self.updateValue(r)

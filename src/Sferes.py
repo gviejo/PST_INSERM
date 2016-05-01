@@ -71,7 +71,7 @@ class pareto():
 
         self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture']
         self.colors_m = dict({'fusion':'r', 'bayesian':'g', 'qlearning':'grey', 'selection':'b', 'mixture':'y'})
-
+        self.markers_type = dict({'distance':'*', 'owa': '^', 'tche': 'o'})
         self.data = dict()
         self.opt = dict()
         self.pareto = dict()
@@ -79,11 +79,11 @@ class pareto():
         self.owa = dict()
         self.tche = dict()
         self.p_test = dict()
-        self.mixed = dict()
-        self.beh = dict({'state':[],'action':[],'responses':[],'reaction':[]})
+        self.mixed = dict()        
         self.indd = dict()
         self.zoom = dict()
         self.timing = dict()
+        self.beh = dict()
         if self.directory != '':
             self.simpleLoadData()    
         
@@ -114,10 +114,6 @@ class pareto():
                     axes[s].plot(pareto_frontier[:,3], pareto_frontier[:,4], "-o", color = self.colors_m[m], alpha = 1.0)        
                     axes[s].set_title(s)
                     # axes[s].set_ylim(-10,0.0)
-
-    def pickling(self, direc):
-        with open(direc, "rb") as f:
-            return pickle.load(f)
 
     def loadData(self):
         model_in_folders = os.listdir(self.directory)
@@ -183,7 +179,6 @@ class pareto():
                         break
             return fm[i+1 if i else 0:].splitlines()
 
-
     def constructParetoFrontier(self, case = 'r2'):
         # A voir si best_log = 0.0
         best_log = 0.0        
@@ -204,26 +199,25 @@ class pareto():
                         pareto_frontier.append(pair)
                 self.pareto[m][s] = np.array(pareto_frontier)
 
-                self.pareto[m][s][:,3] = self.pareto[m][s][:,3] - 10000.0
+                self.pareto[m][s][:,3] = self.pareto[m][s][:,3] - 50000.0
                 self.pareto[m][s][:,4] = self.pareto[m][s][:,4] - 50000.0
-                # if case == 'r2':
-                #     self.pareto[m][s][:,3] = 1.0 - (self.pareto[m][s][:,3]/(self.N[s]*np.log(0.25)))
-                # elif case == 'log':
-                #     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_log)/(best_log-worst_log)
-                # elif case == 'bic':
-                #     self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - float(len(self.p_order[m]))*np.log(self.N[s])
-                #     best_bic = 2*best_log - float(len(self.p_order[m]))*np.log(self.N[s])
-                #     worst_bic = 2*worst_log - float(len(self.p_order[m]))*np.log(self.N[s])
-                #     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_bic)/(best_bic-worst_bic)
-                # elif case == 'aic':
-                #     self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - 2.0*float(len(self.p_order[m]))
-                #     best_aic = 2*best_log - float(len(self.p_order[m]))*2.0
-                #     worst_aic = 2*worst_log - float(len(self.p_order[m]))*2.0
-                #     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_aic)/(best_aic - worst_aic)
-                # self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(np.power(2*self.rt_reg_monkeys[s][:,1], 2).sum()))
+                if case == 'r2':
+                    self.pareto[m][s][:,3] = 1.0 - (self.pareto[m][s][:,3]/(self.N[s]*np.log(0.25)))
+                elif case == 'log':
+                    self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_log)/(best_log-worst_log)
+                elif case == 'bic':
+                    self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - float(len(self.p_order[m]))*np.log(self.N[s])
+                    best_bic = 2*best_log - float(len(self.p_order[m]))*np.log(self.N[s])
+                    worst_bic = 2*worst_log - float(len(self.p_order[m]))*np.log(self.N[s])
+                    self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_bic)/(best_bic-worst_bic)
+                elif case == 'aic':
+                    self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - 2.0*float(len(self.p_order[m]))
+                    best_aic = 2*best_log - float(len(self.p_order[m]))*2.0
+                    worst_aic = 2*worst_log - float(len(self.p_order[m]))*2.0
+                    self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_aic)/(best_aic - worst_aic)
+                self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(np.power(4.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
                 # # on enleve les points negatifs                
-                # self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,4]>0).prod(1)==1]
-
+                self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
 
     def constructMixedParetoFrontier(self):
         # subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
@@ -254,34 +248,6 @@ class pareto():
                         tmp[:,i][np.unique(self.pareto[m][s][:,i+5], return_index = True)[1]] = 1.0
                     self.pareto[m][s] = self.pareto[m][s][tmp.sum(1)>0]
 
-    def reTest(self):
-        for s in self.extremum.keys():
-        # for s in ['S3']:            
-            for m in self.extremum[s].keys():
-                parameters = self.extremum[s][m]
-                # MAking a sferes call to compute a time conversion
-                with open(self.case+"/"+s+".pickle", "rb") as f:
-                    data = pickle.load(f)
-                self.models[m].__init__(['s1', 's2', 's3'], ['thumb', 'fore', 'midd', 'ring', 'little'], parameters, sferes = True)
-                opt = EA(data, s, self.models[m])                                
-                for i in xrange(opt.n_blocs):
-                    opt.model.startBloc()
-                    for j in xrange(opt.n_trials):
-                        opt.model.computeValue(opt.state[i,j]-1, opt.action[i,j]-1, (i,j))
-                        opt.model.updateValue(opt.responses[i,j])
-                opt.fit[0] = float(np.sum(opt.model.value))
-                # print opt.model.value[1,21]
-                # if s == 'S8':
-                #     print opt.fit[0] +2000.0               
-                #     return opt.model.value
-                # Check if coherent                 
-                print s, m
-                print "\t from test :", np.round(opt.fit[0], 2)
-                print "\t from sferes :", self.values[s][m]['log']
-                
-                # for i in xrange(len(opt.model.value.flatten())):
-                #     print opt.model.value.flatten()[i]
-    
     def rankDistance(self):
         self.p_test['distance'] = dict()        
         self.indd['distance'] = dict()
@@ -337,6 +303,28 @@ class pareto():
             assert len(tmp) == 1
             self.p_test['tche'][s] = dict({m:dict(zip(self.p_order[m],tmp[0,5:]))})                        
 
+    def retrieveRanking(self):
+        xmin = 0.0
+        ymin = 0.0
+        for s in self.mixed.iterkeys():
+            self.zoom[s] = np.hstack((self.mixed[s][:,4:6], self.distance[s][:,1:2], np.vstack(self.owa[s]), np.vstack(self.tche[s]), np.vstack(self.mixed[s][:,0])))
+ 
+    def evaluate(self):
+        for o in self.p_test.keys():
+            self.beh[o] = dict()
+            for s in self.p_test[o].keys():
+                self.beh[o][s] = dict()
+                m = self.p_test[o][s].keys()[0]
+                parameters = self.p_test[o][s][m]
+                model = self.models[m]
+                fit = model.sferes_call(self.monkeys[s], self.rt_reg_monkeys[s], parameters)
+                data = self.data[m][s][int(self.indd[o][s][1])]
+                line = np.where((data[:,0] == self.indd[o][s][2]) & ( data[:,1] == self.indd[o][s][3]))                
+                print o, s, m
+                print fit[0], fit[1]
+                print data[line,2][0,0] - 50000.0, data[line,3][0,0] - 50000.0, "\n"
+                self.beh[o][s][m] = model.rt_model
+
     def writeParameters(self, filename):
         with open(filename, 'w') as f:
             for o in self.p_test.keys():
@@ -350,79 +338,86 @@ class pareto():
                     f.write(line)                
                     f.write("\n")
 
-    def preview(self):
+    def writePlot(self, name):
         rcParams['ytick.labelsize'] = 8
         rcParams['xtick.labelsize'] = 8        
-        fig_model = figure(figsize = (10,10)) # for each model all subject            
+        
+        fig_1 = figure(figsize = (10,5)) # for each model all subject            
+        i = 1
+        subjects = self.pareto['fusion'].keys()        
+        for s in subjects:
+            ax = fig_1.add_subplot(2,3,i)
+            for m in self.pareto.keys():
+                if s in self.pareto[m].keys():
+                    ax.plot(self.pareto[m][s][:,3], self.pareto[m][s][:,4], 'o-', color = self.colors_m[m], label = m)
+            ax.set_title(s)
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+            if i == 1: ax.legend(loc = 'best')
+            i+=1
+
+        fig_1.savefig(name+"_pareto_front.pdf")
                 
-        for m,i in zip(self.pareto.iterkeys(), xrange(len(self.pareto.keys()))):
-            ax2 = fig_model.add_subplot(3,2,i+1)
-            for s in self.pareto[m].iterkeys():
-                # ax2.plot(self.pareto[m][s][:,3], self.pareto[m][s][:,4], "-o", alpha = 1.0, label = s)        
-                ax2.plot(self.pareto[m][s][:,3], self.pareto[m][s][:,4], "-o", color = self.colors_m[m], alpha = 1.0)        
-            ax2.set_title(m)
-            ax2.set_xlim(0,1)
-            ax2.set_ylim(0,1)
-            ax2.legend()        
-        ax4 = fig_model.add_subplot(3,2,6)                                            
-        for s in self.mixed.keys():
+        fig_2 = figure(figsize = (10, 5)) 
+        i = 1
+        subjects = self.mixed.keys()
+        for s in subjects:
+            ax = fig_2.add_subplot(2,3,i)
+            ax.plot(self.mixed[s][:,4], self.mixed[s][:,5], '-', color = 'grey')
             for m in np.unique(self.mixed[s][:,0]):
                 ind = self.mixed[s][:,0] == m
-                ax4.plot(self.mixed[s][ind,4], self.mixed[s][ind,5], 'o-', color = self.colors_m[self.m_order[int(m)]])
-                ax4.plot(self.zoom[s][np.argmin(self.zoom[s][:,2]),0], self.zoom[s][np.argmin(self.zoom[s][:,2]),1], '*', markersize = 10)
-                # ax4.plot(self.zoom[s][np.argmax(self.zoom[s][:,3]),0], self.zoom[s][np.argmax(self.zoom[s][:,3]),1], '^', markersize = 10)
-                # ax4.plot(self.zoom[s][np.argmin(self.zoom[s][:,4]),0], self.zoom[s][np.argmin(self.zoom[s][:,4]),1], 'o', markersize = 10)
-        ax4.set_xlim(0,1)
-        ax4.set_ylim(0,1)
+                ax.plot(self.mixed[s][ind,4], self.mixed[s][ind,5], 'o', color = self.colors_m[self.m_order[int(m)]])
+            ax.plot(self.zoom[s][np.argmin(self.zoom[s][:,2]),0], self.zoom[s][np.argmin(self.zoom[s][:,2]),1], '*', markersize = 10)
+            ax.plot(self.zoom[s][np.argmax(self.zoom[s][:,3]),0], self.zoom[s][np.argmax(self.zoom[s][:,3]),1], '^', markersize = 10)
+            ax.plot(self.zoom[s][np.argmin(self.zoom[s][:,4]),0], self.zoom[s][np.argmin(self.zoom[s][:,4]),1], 'o', markersize = 10)            
+            if i==1: ax.legend(loc = 'best')
+            i+=1 
 
+        fig_2.savefig(name+"_mixed_pareto_front.pdf")
 
-        #  = figure(figsize = (10,6))                 
-        # ax7 = fig_evo.add_subplot(1,2,1)
-        # ax8 = fig_evo.add_subplot(1,2,2)
-        # for m in self.data.iterkeys():
-        #     for s in self.data[m].iterkeys():
-        #         tmp1 = []
-        #         tmp2 = []                
-        #         for g in np.unique(self.data[m][s][0][:,0]):
-        #             tmp1.append(self.data[m][s][0][self.data[m][s][0][:,0]==g][0,2])
-        #             tmp2.append(self.data[m][s][0][self.data[m][s][0][:,0]==g][0,3])                                
-        #         ax7.plot(np.unique(self.data[m][s][0][:,0]), np.array(tmp1), 'o-', color = self.colors_m[m])
-        #         ax8.plot(np.unique(self.data[m][s][0][:,0]), np.array(tmp2), 'o-', color = self.colors_m[m])
-    
-        # fig_zoom = figure(figsize = (5,5))
-        # ax6 = fig_zoom.add_subplot(1,1,1)
-        # for s in self.zoom.keys():            
-        #     ax6.plot(self.zoom[s][:,0], self.zoom[s][:,1], '.-', color = 'grey')
-        #     ax6.plot(self.zoom[s][np.argmin(self.zoom[s][:,2]),0], self.zoom[s][np.argmin(self.zoom[s][:,2]),1], '*', markersize = 15, color = 'blue', alpha = 0.5)
-        #     ax6.plot(self.zoom[s][np.argmax(self.zoom[s][:,3]),0], self.zoom[s][np.argmax(self.zoom[s][:,3]),1], '^', markersize = 15, color = 'red', alpha = 0.5)
-        #     ax6.plot(self.zoom[s][np.argmin(self.zoom[s][:,4]),0], self.zoom[s][np.argmin(self.zoom[s][:,4]),1], 'o', markersize = 15, color = 'green', alpha = 0.5)
-        # ax6.set_xlim(0,1)
-        # ax6.set_ylim(0,1)
+        fig_3 = figure(figsize = (10, 5))
+        i = 1        
+        for n in xrange(1, 6):
+            for s in subjects:
+                ax = fig_3.add_subplot(5,5,i)
+                for o in self.beh.keys():                    
+                    m = self.beh[o][s].keys()[0]
+                    index = np.where(self.rt_reg_monkeys[s][:,0] == n)
+                    ax.plot(self.beh[o][s][m][index], self.markers_type[o]+'-', color = self.colors_m[m], label = o, alpha = 0.6)
+
+                ax.plot(self.rt_reg_monkeys[s][index,1][0], '-', color = 'black')
+                ax.fill_between(np.arange(len(index[0])), self.rt_reg_monkeys[s][index,1][0]+self.rt_reg_monkeys[s][index,2][0], self.rt_reg_monkeys[s][index,1][0]-self.rt_reg_monkeys[s][index,2][0], color = 'black', alpha = 0.4)
+                # if i==1:ax.legend(loc='best')
+                i+=1
         
-        # fig_front = figure(figsize = (12,12))
-        # m = 'fusion'
-        # n = 1
-        # for i in xrange(len(self.data[m].keys())):
-        #     s = self.data[m].keys()[i]
-        #     ax9 = fig_front.add_subplot(4,4,i+1)
-        #     color=iter(cm.rainbow(np.linspace(0,1,len(np.unique(self.data[m][s][n][:,0])))))
-        #     for g in np.unique(self.data[m][s][n][:,0]):
-        #         c = next(color)
-        #         ind = self.data[m][s][n][:,0] == g
-        #         gen = self.data[m][s][n][:,2:4][ind] - [2000.0,500.0]
-        #         ax9.plot(gen[:,0], gen[:,1], 'o', c = c)
-        #         ax9.plot(self.pareto[m][s][:,3], self.pareto[m][s][:,4], '-', linewidth = 3, color='black')
-        #     ax9.set_xlim(self.front_bounds[s][0], self.best[0])
-        #     ax9.set_ylim(self.front_bounds[s][1], self.best[1])
-        #     # ax9.axvline(-4*(3*np.log(5)+2*np.log(4)+2*np.log(3)+np.log(2)))
-        #     ax9.set_title(s)
+        fig_3.savefig(name+"_evaluation_sferes_call.pdf")
 
-    def retrieveRanking(self):
-        xmin = 0.0
-        ymin = 0.0
-        for s in self.mixed.iterkeys():
-            self.zoom[s] = np.hstack((self.mixed[s][:,4:6], self.distance[s][:,1:2], np.vstack(self.owa[s]), np.vstack(self.tche[s]), np.vstack(self.mixed[s][:,0])))
-        
+     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     def rankIndividualStrategy(self):
         # order is distance, owa , tchenbytchev
         data = {}

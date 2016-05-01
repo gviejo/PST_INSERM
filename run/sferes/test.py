@@ -8,24 +8,41 @@ import sys, os
 sys.path.append("../../src")
 from Models import *
 from Sferes import pareto
+import cPickle as pickle
 
+with open("SFERES_1_best_parameters.pickle", 'rb') as f:
+	data = pickle.load(f)
 
-
-parameters = {'alpha': 0.99315900000000001,
- 'beta': 4.8539899999999996,
- 'kappa': 0.18535099999999999,
- 'length': 2.3830840000000002,
- 'noise': 0.095417500000000002,
- 'shift': 0.63659500000000002,
- 'sigma': 12.71744,
- 'threshold': 0.49407347000000001,
- 'weight': 0.091949400000000001}
 
 
 front = pareto()
 
-model = CSelection()
 
-fit = model.sferes_call(front.monkeys['p'], front.rt_reg_monkeys['p'], parameters)
+figure()
+for i in xrange(1, 6):
+	subplot(2,3,i)
+	index = np.where(front.rt_reg_monkeys['m'][:,0] == i)[0]
+	plot(np.arange(0,i), front.rt_reg_monkeys['m'][index[0:i],1], 'o-')
+	plot(np.arange(i, i+len(front.rt_reg_monkeys['m'][index[i:],1])), front.rt_reg_monkeys['m'][index[i:],1], '*-')
+show()
+
+
+
+sys.exit()
+parameters = data['tche']['m']['fusion']
+parameters['gain'] = 1.0
+
+model = FSelection()
+
+fit = model.sferes_call(front.monkeys['m'], front.rt_reg_monkeys['m'], parameters)
 
 print fit[0], fit[1]
+
+figure()
+
+for i in xrange(1, 6):	
+	subplot(2,3,i)
+	plot(model.rt_model[model.mean_rt[:,0] == i], 'o-')
+	plot(model.mean_rt[model.mean_rt[:,0] == i,1], '*--', color = 'black')
+
+show()
