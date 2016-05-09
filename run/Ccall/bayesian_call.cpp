@@ -70,7 +70,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 	int problem; 
 	///////////////////
 	int sari [N][5];	
-	double mean_rt [50][3];	
+	double mean_rt [30][3];	
 	double values [N]; // action probabilities according to subject
 	double rt [N]; // rt du model	
 	double p_a_mb [n_action];	
@@ -104,7 +104,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 	std::ifstream data_file2(file2.c_str());	
 	if (data_file2.is_open())
 	{
-		for (int i=0;i<50;i++) 
+		for (int i=0;i<30;i++) 
 		{  
 			getline (data_file2,line);			
 			stringstream stream(line);
@@ -239,10 +239,10 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 	alignToMedian(rt, N);	
 
 	// REARRANGE TO REPRESENTATIVE STEPS
-	double mean_model [50];
-	double sum_tmp [50];
+	double mean_model [30];
+	double sum_tmp [30];
 
-	for (int i=0;i<50;i++) {
+	for (int i=0;i<30;i++) {
 		mean_model[i] = 0;
 		sum_tmp[i] = 0;
 	}
@@ -254,7 +254,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 		}
 		fit[0] += values[i];
 	}
-	for (int i=0;i<50;i++) {
+	for (int i=0;i<30;i++) {
 		mean_model[i] = mean_model[i]/sum_tmp[i];
 		// std::cout << mean_model[i] << std::endl;
 		fit[1] -= pow(mean_model[i] - mean_rt[i][1], 2.0);
