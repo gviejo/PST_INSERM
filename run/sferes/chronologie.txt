@@ -1,0 +1,9 @@
+SFERES1
+	first test
+	7 repeat trials 
+	no pre-selected data
+
+SFERES2
+	3 repeat trials
+	pre-selected data
+	also modified shift update
