@@ -54,6 +54,8 @@ front.evaluate()
 front.writePlot(options.input)
 
 os.system("evince "+options.input+"_*.pdf")
+os.system("pdftk SFERES_1_pareto_front.pdf SFERES_1_mixed_pareto_front.pdf SFERES_1_evaluation_sferes_call.pdf cat output SFERES1_all_plot.pdf")
 
 with open(options.input+"_best_parameters.pickle", 'wb') as f:
 	pickle.dump(front.p_test, f)
+
