@@ -43,18 +43,18 @@ class pareto():
     """
     Explore Pareto Front from Sferes Optimization
     """
-    def __init__(self, directory = ''):
+    def __init__(self, directory = '', nb_repeat = 3):
         self.directory = directory           
 
         # LOAD monkeys data
         self.monkeys = {}
         self.N = {}        
         self.rt_reg_monkeys = {}
-        for s in os.listdir("../../data/data_txt/"):
+        for s in os.listdir("../../data/data_txt_"+str(nb_repeat)+"_repeat/"):
             if "rt_reg.txt" in s:
-                self.rt_reg_monkeys[s.split("_")[0]] = np.genfromtxt("../../data/data_txt/"+s)
+                self.rt_reg_monkeys[s.split("_")[0]] = np.genfromtxt("../../data/data_txt_"+str(nb_repeat)+"_repeat/"+s)
             else :
-                self.monkeys[s.split(".")[0]] = np.genfromtxt("../../data/data_txt/"+s)
+                self.monkeys[s.split(".")[0]] = np.genfromtxt("../../data/data_txt_"+str(nb_repeat)+"_repeat/"+s)
                 self.N[s.split(".")[0]] = len(self.monkeys[s.split(".")[0]])               
 
         self.models = dict({"fusion":FSelection(),
@@ -68,12 +68,6 @@ class pareto():
                             'bayesian':['length','noise','threshold', 'sigma'],
                             'selection':['beta','eta','length','threshold','noise','sigma', 'sigma_rt'],
                             'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift']})
-
-        self.legend_m = dict({'fusion':'Entropy-based coordination',
-                'bayesian':'Bayesian Working Memory',
-                'qlearning':'Q-Learning',
-                'selection': 'VPI-based selection',
-                'mixture': 'Weight-based mixture'})
 
         self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture']
         self.colors_m = dict({'fusion':'r', 'bayesian':'g', 'qlearning':'grey', 'selection':'b', 'mixture':'y'})
@@ -92,6 +86,7 @@ class pareto():
         self.beh = dict()
         if self.directory != '':
             self.simpleLoadData()    
+        
         
 
     def showBrute(self):
@@ -186,8 +181,16 @@ class pareto():
             return fm[i+1 if i else 0:].splitlines()
 
     def constructParetoFrontier(self, case = 'r2'):
-        # A voir si best_log = 0.0
-        best_log = 0.0        
+        # Best log est log(0.25)*nb de problem
+        self.best_log = dict()
+        for s in self.monkeys.keys():
+            self.best_log[s] = np.log(0.25)
+            problem = self.monkeys[s][0,4]
+            for t in xrange(len(self.monkeys[s])):
+                if self.monkeys[s][t,4] != problem:
+                    if self.monkeys[s][t,2] - self.monkeys[s][t-1,2] < 0.0:
+                        self.best_log[s] += np.log(0.25)
+
         for m in self.data.iterkeys():
             self.pareto[m] = dict()
             for s in self.data[m].iterkeys():
@@ -210,18 +213,18 @@ class pareto():
                 if case == 'r2':
                     self.pareto[m][s][:,3] = 1.0 - (self.pareto[m][s][:,3]/(self.N[s]*np.log(0.25)))
                 elif case == 'log':
-                    self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_log)/(best_log-worst_log)
+                    self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_log)/(self.best_log[s]-worst_log)
                 elif case == 'bic':
                     self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - float(len(self.p_order[m]))*np.log(self.N[s])
-                    best_bic = 2*best_log - float(len(self.p_order[m]))*np.log(self.N[s])
+                    best_bic = 2*self.best_log[s] - float(len(self.p_order[m]))*np.log(self.N[s])
                     worst_bic = 2*worst_log - float(len(self.p_order[m]))*np.log(self.N[s])
                     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_bic)/(best_bic-worst_bic)
                 elif case == 'aic':
                     self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - 2.0*float(len(self.p_order[m]))
-                    best_aic = 2*best_log - float(len(self.p_order[m]))*2.0
+                    best_aic = 2*self.best_log[s] - float(len(self.p_order[m]))*2.0
                     worst_aic = 2*worst_log - float(len(self.p_order[m]))*2.0
                     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_aic)/(best_aic - worst_aic)
-                self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(np.power(4.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
+                self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(np.power(2.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
                 # # on enleve les points negatifs                
                 self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
 
@@ -331,7 +334,9 @@ class pareto():
                 print data[line,2][0,0] - 50000.0, data[line,3][0,0] - 50000.0, "\n"
                 self.beh[o][s][m] = model.rt_model
 
-    def writeParameters(self, filename):
+    def writeParameters(self, filename_):
+        "Nicely print parameters in a file"
+        filename = filename_+"_best_parameters.txt"
         with open(filename, 'w') as f:
             for o in self.p_test.keys():
                 f.write(o+"\n")

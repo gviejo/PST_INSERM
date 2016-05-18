@@ -58,15 +58,17 @@ class FSelection():
                     self.problem = self.sari[i][1]
                     self.n_element = 0
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    # print "biais", self.spatial_biases
                     self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-                    self.values_mf[self.current_action] *= (1.0-self.parameters['shift'])
+                    # shift bias
+                    tmp = self.values_mf[self.current_action]
+                    self.values_mf *= self.parameters['shift']/3.
+                    self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+                    # spatial biaises update
                     self.spatial_biases[self.sari[i,2]-1] += 1.0
 
 
             # START TRIAL
             self.current_action = self.sari[i][2]-1
-            # print "PROBLEM=", self.problem, " ACTION=", self.current_action
             r = self.sari[i][0]            
 
             self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
@@ -93,9 +95,6 @@ class FSelection():
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
             reaction[0] = float(H)        
-            # reaction[0] = H
-            # print 0, " p_ak=", self.p_ak[0], " p_decision=", self.p_decision[0] , " p_retrieval=", self.p_retrieval[0]      
-            # print "N element =", self.n_element
             for j in xrange(self.n_element):            
                 self.inferenceModule()
                 self.evaluationModule()
@@ -174,61 +173,7 @@ class FSelection():
         
         if np.sum(self.p_a_final == 0.0):
             self.p_a_final+=1e-8;
-            self.p_a_final = self.p_a_final/self.p_a_final.sum()
-        # print "p_afinal =", self.p_a_final
-        # if not self.sferes:
-        #     # qlearning
-        #     tmp = np.exp(self.values_mf[self.current_state]*float(self.parameters['beta']))
-        #     pa = tmp/np.sum(tmp)
-        #     # print "Q_ql("+str(self.current_state)+")=",self.values_mf[self.current_state]            
-        #     # print "p_ql("+str(self.current_state)+")=",pa            
-        #     self.h_ql_only = -np.sum(pa*np.log2(pa))
-        #     # print "H_ql =", self.h_ql_only
-        #     # bayesian
-        #     tmp = np.exp(self.p_a_mb*float(self.parameters['beta']))
-        #     pa = tmp/np.sum(tmp)
-        #     # print "N=", self.nb_inferences
-        #     # print "Q_ba("+str(self.current_state)+")=",self.p_a_mb
-        #     # print "p_ba("+str(self.current_state)+")=",pa
-        #     self.h_bayes_only = -np.sum(pa*np.log2(pa))
-        #     # print "H_ba =", self.h_bayes_only
-        
-    def chooseAction(self, state):
-        self.state[-1].append(state)
-        self.current_state = convertStimulus(state)-1
-        self.p = self.uniform[:,:]
-        self.Hb = self.max_entropy
-        self.p_a_mf = SoftMaxValues(self.values_mf[self.current_state], self.parameters['gamma'])
-        self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
-        self.nb_inferences = 0
-        self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)
-        
-        # print "Q("+state+")= ", self.values_mf[self.current_state]
-        # print "p_a_mf("+state+")=",self.p_a_mf
-
-        while self.sigmoideModule():
-            self.inferenceModule()
-            self.evaluationModule()
-
-        self.fusionModule()
-        self.current_action = self.sample(self.p_a)
-        self.value.append(float(self.p_a[self.current_action]))
-        self.action[-1].append(self.current_action)                
-        self.Hall[-1].append([float(self.Hb), float(self.Hf)])
-        H = -(self.p_a*np.log2(self.p_a)).sum()
-        self.Hl = H
-        # if np.isnan(H): H = 0.005                        
-        N = float(self.nb_inferences+1)        
-        # self.reaction[-1].append(float(H*self.parameters['sigma']+np.log2(N)))                
-        # self.reaction[-1].append(float((N**self.parameters['sigma'])+H))
-        # self.reaction[-1].append(float(self.parameters['sigma']*np.log2(N)+H))
-        # self.reaction[-1].append(float((np.log2(N)+H)**self.parameters['sigma']))
-        self.reaction[-1].append(float(((np.log2(N))**self.parameters['sigma'])+H))
-        self.pdf[-1].append(N)
-
-        # self.reaction[-1].append(N-1)
-        
-        return self.actions[self.current_action]
+            self.p_a_final = self.p_a_final/self.p_a_final.sum()        
 
     def updateValue(self, reward):
         # print "R = ", reward
@@ -249,17 +194,12 @@ class FSelection():
         self.p_r_a[0, self.current_action] = 0.0
         self.p_r_a[0, self.current_action, int(r)] = 1.0        
         # Updating model free
-        r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                        
-        # print "R = ", float(r)
-        # print self.values_mf[self.current_action]        
+        r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
         self.delta = float(r)-self.values_mf[self.current_action]        
-        # print "delta = ", self.delta
-        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta        
-        # print " mf2=" , self.values_mf
+        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
         index = range(self.n_action)
         index.pop(int(self.current_action))        
-        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * ((1.0/self.n_action) - self.values_mf[index])
-        # print " mf3=", self.values_mf
+        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
 
 class CSelection():
     """ mixture strategy
@@ -307,7 +247,11 @@ class CSelection():
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
                     # print "biais", self.spatial_biases
                     self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-                    self.values_mf[self.current_action] *= (1.0-self.parameters['shift'])
+                    # shift bias
+                    tmp = self.values_mf[self.current_action]
+                    self.values_mf *= self.parameters['shift']/3.
+                    self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+                    # spatial biaises
                     self.spatial_biases[self.sari[i,2]-1] += 1.0
 
             # START TRIAL
@@ -346,6 +290,87 @@ class CSelection():
         fit[1] = -np.sum(np.power(self.rt_model-self.mean_rt[:,1], 2.0))
         return fit
 
+    def analysis_call(self, sari, mean_rt, parameters):        
+        self.parameters = parameters
+        self.sari = sari[:,[3,4,5,9,2]] # reward | problem | action | index | phase
+        self.N = len(self.sari)        
+        self.mean_rt = mean_rt
+        self.value = np.zeros(self.N)
+        self.reaction = np.zeros(self.N)
+        self.values_mf =  np.zeros(self.n_action)
+        self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
+        self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
+        self.nb_inferences = 0
+        self.n_element = 0
+        self.Hb = self.max_entropy        
+        self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
+        self.problem = self.sari[0,1]
+        self.p_a_final = np.zeros(self.n_action)
+        self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
+        self.w = self.parameters['weight']
+        ## LIST ####
+        self.w_list = np.zeros(self.N)
+        self.entropy_list = np.zeros((self.N,2))
+        self.free_list = np.zeros((self.N,4))
+        self.biais_list = np.zeros((self.N,4))
+        self.delta_list = np.zeros((self.N,4))
+        ############
+        for i in xrange(self.N):        
+            if self.sari[i][1] != self.problem:
+                if self.sari[i][4]-self.sari[i-1][4] < 0.0:
+                    # START BLOC
+                    self.problem = self.sari[i][1]
+                    self.n_element = 0
+                    self.w = self.parameters['weight']
+                    # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT                    
+                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()
+                    # shift bias
+                    tmp = self.values_mf[self.current_action]
+                    self.values_mf *= self.parameters['shift']/3.
+                    self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+                    # spatial biaises update
+                    self.spatial_biases[self.sari[i,2]-1] += 1.0
+
+            # START TRIAL
+            self.current_action = self.sari[i][2]-1            
+            r = self.sari[i][0]            
+            
+
+            # BAYESIAN CALL
+            self.p = self.uniform[:,:]
+            self.Hb = self.max_entropy
+            self.nb_inferences = 0  
+            self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+
+            while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
+                self.inferenceModule()
+                self.evaluationModule()                    
+
+            self.fusionModule()
+
+            self.w_list[i] = self.w
+            self.entropy_list[i,0] = self.Hb
+            self.entropy_list[i,1] = self.Hf
+            self.free_list[i] = self.values_mf
+            self.biais_list[i] = self.spatial_biases
+
+            self.value[i] = float(np.log(self.p_a_final[self.current_action])) 
+            # print self.value[i]
+            H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
+            self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            # print self.reaction[i]
+            self.updateValue(r)
+            
+
+        # ALIGN TO MEDIAN
+        self.reaction = self.reaction - np.median(self.reaction)
+        self.reaction = self.reaction / (np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25))        
+        # LEAST SQUARES            
+        self.rt_model = np.zeros(len(self.mean_rt))
+        for i in xrange(len(self.rt_model)):
+            self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
+        
+
 
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]
@@ -369,6 +394,7 @@ class CSelection():
         self.p_a_mf = np.exp(self.values_mf*float(self.parameters['beta']))
         self.p_a_mf = self.p_a_mf/np.sum(self.p_a_mf)
         self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
+        
         self.p_a_final = (1.0-self.w)*self.p_a_mf + self.w*self.p_a_mb                
         self.q_values = self.p_a_final      
 
@@ -415,16 +441,12 @@ class CSelection():
         self.p_r_a[0, self.current_action, int(r)] = 1.0        
         # Updating model free
         r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                        
-        # print "R = ", float(r)
-        # print self.values_mf[self.current_action]        
         self.delta = float(r)-self.values_mf[self.current_action]        
-        # print "delta = ", self.delta
-        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta        
-        # print " mf2=" , self.values_mf
+        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
         index = range(self.n_action)
         index.pop(int(self.current_action))        
-        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * ((1.0/self.n_action) - self.values_mf[index])
-        # print " mf3=", self.values_mf
+        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        
+
 
 class BayesianWorkingMemory():
     """ Bayesian Working memory strategy
@@ -628,7 +650,7 @@ class QLearning():
         # print " mf2=" , self.values_mf
         index = range(self.n_action)
         index.pop(int(self.current_action))        
-        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * ((1.0/self.n_action) - self.values_mf[index])
+        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])
         # print " mf3=", self.values_mf
 
 

@@ -326,7 +326,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		// std::cout << std::endl;	
 		for (int m=0;m<n_action;m++) {
 			if (m != a) {				
-				values_mf[m] += (1.0-kappa)*((1.0/n_action)-values_mf[m]);
+				values_mf[m] += (1.0-kappa)*(0.0-values_mf[m]);
 			}
 		}
 

@@ -7,3 +7,7 @@ SFERES2
 	3 repeat trials
 	pre-selected data
 	also modified shift update
+	bug in sferes 2, Q0 = 1/n_actions --> Q0 = 0.0
+
+SFERES3
+	same as sferes 2

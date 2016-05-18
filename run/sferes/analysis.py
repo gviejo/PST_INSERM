@@ -44,7 +44,7 @@ parser.add_option("-o", "--output", action="store", help="The output file of bes
 # LOADING DATA
 # -----------------------------------
 front = pareto(options.input)
-front.constructParetoFrontier('log')
+front.constructParetoFrontier('bic')
 front.constructMixedParetoFrontier()
 front.rankTchebytchev()
 front.rankOWA()
@@ -52,9 +52,10 @@ front.rankDistance()
 front.retrieveRanking()
 front.evaluate()
 front.writePlot(options.input)
+front.writeParameters(options.input)
 
 os.system("evince "+options.input+"_*.pdf")
-os.system("pdftk SFERES_1_pareto_front.pdf SFERES_1_mixed_pareto_front.pdf SFERES_1_evaluation_sferes_call.pdf cat output SFERES1_all_plot.pdf")
+os.system("pdftk "+options.input+"_pareto_front.pdf "+options.input+"_mixed_pareto_front.pdf "+options.input+"_evaluation_sferes_call.pdf cat output "+options.input+"_all_plot.pdf")
 
 with open(options.input+"_best_parameters.pickle", 'wb') as f:
 	pickle.dump(front.p_test, f)
