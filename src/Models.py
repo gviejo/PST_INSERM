@@ -132,6 +132,121 @@ class FSelection():
         fit[1] = -np.sum(np.power(self.rt_model-self.mean_rt[:,1], 2.0))
         return fit
 
+    def analysis_call(self, sari, mean_rt, parameters):
+        self.parameters = parameters
+        self.sari = sari[:,[3,4,5,9,2]] # reward | problem | action | index | phase
+        self.N = len(self.sari)
+        self.max_entropy = -np.log2(1./self.n_action)        
+        self.mean_rt = mean_rt
+        self.value = np.zeros(self.N)
+        self.reaction = np.zeros(self.N)        
+        self.values_mf = np.zeros(self.n_action)
+        self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
+        self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
+        self.nb_inferences = 0
+        self.n_element = 0
+        self.Hb = self.max_entropy
+        self.Hf = self.max_entropy    
+        self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
+        self.problem = self.sari[0,1]
+        self.p_a_final = np.zeros(self.n_action)
+        self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
+        ## LIST ####
+        self.w_list = np.zeros(self.N)
+        self.entropy_list = np.zeros((self.N,2))
+        self.free_list = np.zeros((self.N,4))
+        self.biais_list = np.zeros((self.N,4))
+        self.delta_list = np.zeros((self.N,4))
+        self.inference_list = np.zeros((self.N,1))
+        self.Hb_list = np.zeros((self.N, self.parameters['length']+1))
+        ############
+        for i in xrange(self.N):        
+            if self.sari[i][1] != self.problem:                
+                if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
+                    # START BLOC
+                    self.problem = self.sari[i][1]
+                    self.n_element = 0
+                    # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
+                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()
+                    # shift bias
+                    tmp = self.values_mf[self.current_action]
+                    self.values_mf *= self.parameters['shift']/3.
+                    self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+                    # spatial biaises update
+                    self.spatial_biases[self.sari[i,2]-1] += 1.0
+
+
+            # START TRIAL
+            self.current_action = self.sari[i][2]-1
+            r = self.sari[i][0]            
+
+            self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
+            self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
+            # BAYESIAN CALL
+            self.p = self.uniform[:,:]
+            self.Hb = self.max_entropy
+            self.nb_inferences = 0
+            self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+            self.p_decision = np.zeros(int(self.parameters['length'])+1)
+            self.p_retrieval= np.zeros(int(self.parameters['length'])+1)
+            self.p_sigmoide = np.zeros(int(self.parameters['length'])+1)
+            self.p_ak = np.zeros(int(self.parameters['length'])+1)        
+            q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
+            reaction = np.zeros(int(self.parameters['length'])+1)
+            # START            
+            self.sigmoideModule()
+            self.p_sigmoide[0] = self.pA
+            self.p_decision[0] = self.pA
+            self.p_retrieval[0] = 1.0-self.pA
+            # print "mf = ", self.values_mf
+
+            self.fusionModule()
+            self.p_ak[0] = self.p_a_final[self.current_action]            
+            H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
+            reaction[0] = float(H)        
+            self.Hb_list[i,0] = self.Hb
+            for j in xrange(self.n_element):            
+                self.inferenceModule()
+                self.evaluationModule()
+                self.Hb_list[i,j+1] = self.Hb
+                self.fusionModule()                
+                self.p_ak[j+1] = self.p_a_final[self.current_action]                
+                H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
+                N = self.nb_inferences+1.0
+                reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
+                # reaction[j+1] = H
+                self.sigmoideModule()
+                self.p_sigmoide[j+1] = self.pA            
+                self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
+                self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
+                # print j+1, " p_ak=", self.p_ak[j+1], " p_decision=", self.p_decision[j+1], " p_retrieval=", self.p_retrieval[0]
+            
+            ##############            
+            self.entropy_list[i,0] = np.dot(self.p_decision, self.Hb_list[i])
+            self.entropy_list[i,1] = self.Hf
+            self.free_list[i] = self.p_a_mf
+            self.biais_list[i] = self.spatial_biases            
+            if self.n_element:
+                self.inference_list[i] = np.dot(self.p_decision, np.arange(int(self.parameters['length'])+1))
+            else:
+                self.inference_list[i] = 0            
+            ##############
+
+            # print np.dot(self.p_decision,self.p_ak)
+            self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
+            # print self.value[i]
+            # print self.p_decision
+            self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
+            # print self.reaction[i]
+            self.updateValue(r)
+
+        # ALIGN TO MEDIAN
+        self.reaction = self.reaction - np.median(self.reaction)
+        self.reaction = self.reaction / (np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25))        
+        # LEAST SQUARES            
+        self.rt_model = np.zeros(len(self.mean_rt))
+        for i in xrange(len(self.rt_model)):
+            self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
 
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]
@@ -314,6 +429,7 @@ class CSelection():
         self.free_list = np.zeros((self.N,4))
         self.biais_list = np.zeros((self.N,4))
         self.delta_list = np.zeros((self.N,4))
+        self.inference_list = np.zeros((self.N,1))
         ############
         for i in xrange(self.N):        
             if self.sari[i][1] != self.problem:
@@ -341,18 +457,21 @@ class CSelection():
             self.Hb = self.max_entropy
             self.nb_inferences = 0  
             self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
-
+            
             while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
                 self.inferenceModule()
                 self.evaluationModule()                    
-
+                
             self.fusionModule()
 
+            ##########################
             self.w_list[i] = self.w
             self.entropy_list[i,0] = self.Hb
             self.entropy_list[i,1] = self.Hf
-            self.free_list[i] = self.values_mf
-            self.biais_list[i] = self.spatial_biases
+            self.free_list[i] = self.p_a_mf
+            self.biais_list[i] = self.spatial_biases            
+            self.inference_list[i] = self.nb_inferences            
+            ##########################
 
             self.value[i] = float(np.log(self.p_a_final[self.current_action])) 
             # print self.value[i]

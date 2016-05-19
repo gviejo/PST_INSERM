@@ -9,7 +9,7 @@ import numpy as np
 
 sys.path.append("../../src")
 
-from Models import CSelection
+from Models import FSelection
 
 from matplotlib import *
 from pylab import *
@@ -27,17 +27,19 @@ for s in os.listdir("../../data/data_txt_3_repeat/"):
 
 
 
-parameters = "alpha=0.2141, beta=55.142, noise=0.1, length=10.0, weight=0.0309, threshold=1.397, sigma=0.0, kappa=1.0, shift=0.9791"
+parameters = "alpha=1.0, beta=1.9895, noise=0.0457, length=4.6279, gain=0.0, threshold=0.0919, gamma=0.0, sigma=7.1744, kappa=0.8184, shift=0.9501"
 parameters = {p.split("=")[0]:float(p.split("=")[1]) for p in parameters.split(", ")}
 parameters['length'] = int(parameters['length'])
-model = CSelection()
+model = FSelection()
 
 s = 'm'
 model.analysis_call(monkeys[s], rt_reg_monkeys[s], parameters)
 
+
+
 #####################
 t_start = 0
-t_stop = 40
+t_stop = 30
 figure()
 subplot(411)
 plot(model.sari[t_start:t_stop,-1], '--')
@@ -62,10 +64,11 @@ legend()
 
 show()
 
+
+show()
 sys.exit()
 
 #####################
-
 w_evolution = np.zeros((2,len(model.rt_model)))
 entropy_evolution = np.zeros((len(model.rt_model), 2))
 for i in xrange(w_evolution.shape[1]):
@@ -73,6 +76,7 @@ for i in xrange(w_evolution.shape[1]):
 	w_evolution[1,i] = np.std(model.w_list[model.sari[:,3] == i])
 	entropy_evolution[i,0] = np.mean(model.entropy_list[:,0][model.sari[:,3] == i])
 	entropy_evolution[i,1] = np.mean(model.entropy_list[:,1][model.sari[:,3] == i])
+
 
 fig_3 = figure(figsize = (10, 5))
 subplots_adjust(wspace = 0.3, left = 0.1, right = 0.9)

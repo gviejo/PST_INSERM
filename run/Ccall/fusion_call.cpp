@@ -310,11 +310,11 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		p_retrieval[0] = 1.0-p_decision[0];
 		
 		fusion(p_a_final, values_mb, values_mf, beta);
-		// std::cout << "fusion " << values_mf[a] << " " << values_mb[a] <<  std::endl;
+		
 		p_ak[0] = p_a_final[a];
-		reaction[0] = entropy(p_a_final);
-		// std::cout << 0 << " p_ak=" << p_ak[0] << " p_decision=" << p_decision[0] << " p_retrieval=" << p_retrieval[0] << std::endl;
-		// std::cout << " N element =" << n_element << std::endl;
+		// reaction[0] = entropy(p_a_final);
+		reaction[0] = log2(1./n_action) + Hf;
+
 		for (int k=0;k<n_element;k++) {
 			// INFERENCE				
 			double sum = 0.0;
@@ -356,10 +356,11 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			Hb = entropy(p_a_mb);
 			// FUSION
 			fusion(p_a_final, values_mb, values_mf, beta);
-			// std::cout << "fusion " << values_mf[a] << " " << values_mb[a] <<  std::endl;
+			
 			p_ak[k+1] = p_a_final[a];
 			double N = k+2.0;
-			reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
+			// reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
+			reaction[k+1] = Hb + Hf;
 		
 			// SIGMOIDE
 			double pA = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);				
@@ -368,19 +369,15 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			p_decision[k+1] = pA*p_retrieval[k];
 			p_retrieval[k+1] = (1.0-pA)*p_retrieval[k];
 
-			// std::cout << k+1 << " p_ak=" << p_ak[k+1] << " p_decision=" << p_decision[k+1] << "p_retrieval=" << p_retrieval[k+1] << std::endl;
 		}		
 
-		// std::cout << sum_prod(p_ak, p_decision, n_element+1) << std::endl;
 
 		values[i] = log(sum_prod(p_ak, p_decision, n_element+1));
-		// std::cout << values[i] << std::endl;
 
 		double val = sum_prod(p_ak, p_decision, n_element+1);						
 		
 		rt[i] = sum_prod(reaction, p_decision, n_element+1);			
 		
-		// if (isnan(rt[i])) {cout << i << " " << rt[i] << std::endl;}
 		
 		// UPDATE MEMORY 						
 		for (int k=length-1;k>0;k--) {						

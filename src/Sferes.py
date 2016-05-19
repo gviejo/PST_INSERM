@@ -345,7 +345,7 @@ class pareto():
                     f.write(s+"\n")
                     # for s in subjects:
                     m = self.p_test[o][s].keys()[0]
-                    line=m+"\t"+" \t".join([k+"="+str(np.round(self.p_test[o][s][m][k],4)) for k in self.p_order[m]])+"\tloglikelihood = "+str(self.indd[o][s][4])+"\n"      
+                    line=m+"\t"+", ".join([k+"="+str(np.round(self.p_test[o][s][m][k],4)) for k in self.p_order[m]])+"\tloglikelihood = "+str(self.indd[o][s][4])+"\n"      
                     f.write(line)                
                     f.write("\n")
 
