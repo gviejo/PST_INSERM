@@ -11,3 +11,10 @@ SFERES2
 
 SFERES3
 	same as sferes 2
+
+
+SFERES4
+	RT = Hb + Hf
+
+SFERES5
+	Multiplication des qvalues pour fusion seulement

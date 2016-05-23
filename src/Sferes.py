@@ -226,11 +226,11 @@ class pareto():
                     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_aic)/(best_aic - worst_aic)
                 self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(np.power(2.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
                 # # on enleve les points negatifs                
-                self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
+                # self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
 
     def constructMixedParetoFrontier(self):
         # subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
-        subjects = self.pareto['fusion'].keys()
+        subjects = self.pareto['bayesian'].keys()
         for s in subjects:            
             tmp = []            
             for m in self.pareto.iterkeys():
@@ -355,7 +355,7 @@ class pareto():
         
         fig_1 = figure(figsize = (10,5)) # for each model all subject            
         i = 1
-        subjects = self.pareto['fusion'].keys()        
+        subjects = self.pareto['bayesian'].keys()        
         m_order = []
         for s in subjects:
             ax = fig_1.add_subplot(2,3,i)
