@@ -313,7 +313,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		
 		p_ak[0] = p_a_final[a];
 		// reaction[0] = entropy(p_a_final);
-		reaction[0] = log2(1./n_action) + Hf;
+		reaction[0] = log2(1./n_action) + sigma*Hf;
 
 		for (int k=0;k<n_element;k++) {
 			// INFERENCE				
@@ -360,7 +360,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			p_ak[k+1] = p_a_final[a];
 			double N = k+2.0;
 			// reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
-			reaction[k+1] = Hb + Hf;
+			reaction[k+1] = Hb + sigma * Hf;
 		
 			// SIGMOIDE
 			double pA = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);				

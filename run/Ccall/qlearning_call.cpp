@@ -182,7 +182,7 @@ void sferes_call(double * fit, int N, const char* data_dir, double alpha_, doubl
 		double Hf = entropy(p_a_mf);
 		
 		values[i] = log(p_a_mf[a]);						
-		rt[i] =  Hf;
+		rt[i] =  sigma * Hf;
 		// for (int j=0;j<4;j++) {
 		// 	std::cout << values_mf[j] << " ";
 		// }		

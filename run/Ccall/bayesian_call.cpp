@@ -206,7 +206,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 		values[i] = log(p_a_mb[a]);			
 		// std::cout << values[i] << std::endl;
 		// rt[i] =  pow(log2(N), sigma)+H;
-		rt[i] = H;
+		rt[i] = sigma * H;
 
 		// UPDATE MEMORY 						
 		for (int k=length-1;k>0;k--) {						

@@ -268,7 +268,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		values[i] = log(p_a_final[a]);			
 		// std::cout << values[i] << std::endl;
 		// rt[i] =  pow(log2(N), sigma)+H;
-		rt[i] = entrop + Hf;
+		rt[i] = entrop + sigma * Hf;
 
 		// UPDATE WEIGHT
 		double p_wmc;
