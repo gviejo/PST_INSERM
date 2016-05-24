@@ -5,6 +5,7 @@
 
 load and and plot multi objective results from Sferes 2 optimisation 
 
+compare the same models with different version
 
 Copyright (c) 2013 Guillaume VIEJO. All rights reserved.
 """
@@ -44,20 +45,9 @@ parser.add_option("-o", "--output", action="store", help="The output file of bes
 # LOADING DATA
 # -----------------------------------
 front = pareto(options.input)
-front.constructParetoFrontier('bic')
-front.constructMixedParetoFrontier()
-front.rankTchebytchev()
-front.rankOWA()
-front.rankDistance()
-front.retrieveRanking()
-front.flattenFront()
-front.evaluate()
-front.writePlot(options.input)
-front.writeParameters(options.input)
-os.system("pdftk "+options.input+"_pareto_front.pdf "+options.input+"_mixed_pareto_front.pdf "+options.input+"_evaluation_sferes_call.pdf "+options.input+"_bar_best_choice.pdf cat output "+options.input+"_all_plot.pdf")
-os.system("evince "+options.input+"_all_plot.pdf")
+front.constructParetoFrontier('log')
+front.writeComparativePlot(options.input, {'fusion4':1.0,'fusion5':0.6}, {'fusion4':'Qf+Qb','fusion5':'Qf*Qb'})
 
+os.system("evince "+options.input+"_pareto_front.pdf")
 
-with open(options.input+"_best_parameters.pickle", 'wb') as f:
-	pickle.dump(front.p_test, f)
 

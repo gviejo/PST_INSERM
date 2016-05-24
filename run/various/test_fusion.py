@@ -27,12 +27,12 @@ for s in os.listdir("../../data/data_txt_3_repeat/"):
 
 
 
-parameters = "alpha=1.0, beta=1.9895, noise=0.0457, length=4.6279, gain=0.0, threshold=0.0919, gamma=0.0, sigma=7.1744, kappa=0.8184, shift=0.9501"
+parameters = "alpha=0.0482, beta=32.5058, noise=0.0834, length=10.0, gain=2.4593, threshold=2.0588, gamma=30.2911, sigma=20.0, kappa=1.0, shift=0.9981"
 parameters = {p.split("=")[0]:float(p.split("=")[1]) for p in parameters.split(", ")}
 parameters['length'] = int(parameters['length'])
 model = FSelection()
 
-s = 'm'
+s = 'r'
 model.analysis_call(monkeys[s], rt_reg_monkeys[s], parameters)
 
 

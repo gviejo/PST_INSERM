@@ -64,7 +64,7 @@ class pareto():
                             "mixture":CSelection()})
 
         self.p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
-                            'qlearning':['alpha','beta', 'sigma'],
+                            'qlearning':['alpha','beta', 'sigma', 'kappa', 'shift'],
                             'bayesian':['length','noise','threshold', 'sigma'],
                             'selection':['beta','eta','length','threshold','noise','sigma', 'sigma_rt'],
                             'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift']})
@@ -135,8 +135,6 @@ class pareto():
         for m in model_in_folders:            
             self.data[m.split("_")[0]] = dict()
             lrun = os.listdir(self.directory+"/"+m)
-            order = self.p_order[m.split("_")[0]]
-            scale = self.models[m.split("_")[0]].bounds
 
             for r in lrun:
                 print r                
@@ -146,9 +144,12 @@ class pareto():
                     self.data[m.split("_")[0]][s][n] = np.genfromtxt(self.directory+"/"+m+"/"+r)
                 else :
                     self.data[m.split("_")[0]][s] = dict()
-                    self.data[m.split("_")[0]][s][n] = np.genfromtxt(self.directory+"/"+m+"/"+r)                                
-                for p in order:
-                    self.data[m.split("_")[0]][s][n][:,order.index(p)+4] = scale[p][0]+self.data[m.split("_")[0]][s][n][:,order.index(p)+4]*(scale[p][1]-scale[p][0])
+                    self.data[m.split("_")[0]][s][n] = np.genfromtxt(self.directory+"/"+m+"/"+r)                                                
+                if m.split("_")[0] in self.p_order.keys() and m.split("_")[0] in self.models.keys():
+                    order = self.p_order[m.split("_")[0]]
+                    scale = self.models[m.split("_")[0]].bounds
+                    for p in order:                        
+                        self.data[m.split("_")[0]][s][n][:,order.index(p)+4] = scale[p][0]+self.data[m.split("_")[0]][s][n][:,order.index(p)+4]*(scale[p][1]-scale[p][0])
 
     def loadPooled(self, m):         
         data = {m:{}}
@@ -226,11 +227,11 @@ class pareto():
                     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_aic)/(best_aic - worst_aic)
                 self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(np.power(2.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
                 # # on enleve les points negatifs                
-                # self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
+                self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
 
     def constructMixedParetoFrontier(self):
         # subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
-        subjects = self.pareto['bayesian'].keys()
+        subjects = self.pareto['fusion'].keys()
         for s in subjects:            
             tmp = []            
             for m in self.pareto.iterkeys():
@@ -334,6 +335,46 @@ class pareto():
                 print data[line,2][0,0] - 50000.0, data[line,3][0,0] - 50000.0, "\n"
                 self.beh[o][s][m] = model.rt_model
 
+    def flattenFront(self):
+        models = self.data.keys()                        
+        subjects = self.data['fusion'].keys()
+        self.values = dict()
+        self.extremum = dict()                
+        for s in subjects:
+            self.extremum[s] = dict()            
+            self.values[s] = dict()
+            data_best_ind = dict()
+            for m in models:
+                self.extremum[s][m] = dict()
+                self.values[s][m] = dict()
+                data = []
+                for i in self.data[m][s].iterkeys():
+                    #max_gen = np.max(self.data[m][s][i][:,0])
+                    #size_max_gen = np.sum(self.data[m][s][i][:,0]==max_gen)
+                    tmp = np.hstack((np.ones((len(self.data[m][s][i]),1))*i,self.data[m][s][i]))                    
+                    #tmp = np.hstack((np.ones((size_max_gen,1))*i,self.data[m][s][i][-size_max_gen:]))
+                    data.append(tmp)
+                data = np.vstack(data)
+                data[:,3] -= 50000.0
+                # LOG                
+                self.values[s][m]['log'] = np.max(data[:,3])
+                best_ind = np.argmax(data[:,3])
+                data_best_ind[m] = data[best_ind,5:]
+                gen = data[best_ind,1]
+                ind = data[best_ind,2]
+                # print s, data[best_ind,0], gen, ind
+                self.extremum[s][m] = dict(zip(self.p_order[m][0:],data_best_ind[m]))                
+                # BIC
+                self.values[s][m]['bic'] = np.min(-2.0*self.values[s][m]['log'] + float(len(self.p_order[m]))*np.log(self.N[s]))
+               
+        self.best_extremum = dict({'bic':{m:[] for m in models},'log':{m:[] for m in models}})
+        self.p_test_extremum = dict({'bic':{},'log':{}})
+        for s in self.values.iterkeys():
+            for o in ['log', 'bic']:
+                best = np.argmin([self.values[s][m][o] for m in models])
+                self.best_extremum[o][models[best]].append(s)
+                self.p_test_extremum[o][s] = {models[best]:self.extremum[s][models[best]]}
+
     def writeParameters(self, filename_):
         "Nicely print parameters in a file"
         filename = filename_+"_best_parameters.txt"
@@ -350,12 +391,12 @@ class pareto():
                     f.write("\n")
 
     def writePlot(self, name):
-        rcParams['ytick.labelsize'] = 8
-        rcParams['xtick.labelsize'] = 8        
-        
+        rcParams['ytick.labelsize'] = 10
+        rcParams['xtick.labelsize'] = 10        
+        #################################################################################################
         fig_1 = figure(figsize = (10,5)) # for each model all subject            
         i = 1
-        subjects = self.pareto['bayesian'].keys()        
+        subjects = self.pareto['fusion'].keys()        
         m_order = []
         for s in subjects:
             ax = fig_1.add_subplot(2,3,i)
@@ -369,14 +410,15 @@ class pareto():
                 ax.set_ylabel("fit to RT")
             if i == 3 or i == 4 or i == 5:
                 ax.set_xlabel("fit to choice")
-            
+            ax.set_xlim(0,1)
+            ax.set_ylim(0,1)
             i+=1
 
         line2 = tuple([Line2D(range(1),range(1),marker='o', markersize = 2, markeredgecolor = self.colors_m[m], alpha=1.0,color=self.colors_m[m], linewidth = 2) for m in self.pareto.keys()])
         figlegend(line2,tuple(m_order), loc = 'lower right', bbox_to_anchor = (0.92, 0.18), fontsize = 10)
 
         fig_1.savefig(name+"_pareto_front.pdf")
-                
+        #################################################################################################                
         fig_2 = figure(figsize = (10, 5)) 
         i = 1
         subjects = self.mixed.keys()
@@ -395,13 +437,15 @@ class pareto():
                 ax.set_ylabel("fit to RT")
             if i == 3 or i == 4 or i == 5:
                 ax.set_xlabel("fit to choice")
+            ax.set_xlim(0,1)
+            ax.set_ylim(0,1)
             i+=1 
 
         line2 = tuple([Line2D(range(1),range(1),marker='o', markersize = 2, markeredgecolor = self.colors_m[m], alpha=1.0,color=self.colors_m[m], linewidth = 2) for m in self.pareto.keys()])
         figlegend(line2,tuple(m_order), loc = 'lower right', bbox_to_anchor = (0.92, 0.18), fontsize = 10)
 
         fig_2.savefig(name+"_mixed_pareto_front.pdf")
-
+        #################################################################################################
         fig_3 = figure(figsize = (10, 5))
         subplots_adjust(wspace = 0.3, left = 0.1, right = 0.9)
 
@@ -429,8 +473,93 @@ class pareto():
                 i+=1
 
         fig_3.savefig(name+"_evaluation_sferes_call.pdf")
+        #################################################################################################
+        rcParams['ytick.labelsize'] = 12
+        rcParams['xtick.labelsize'] = 12        
+        fig_4 = figure(figsize = (10,5))
 
-     
+        x = []
+        y = []
+        c = []
+        t = 0.0
+        xTickMarks = []
+        xTickPos = []
+
+        for s in subjects:
+            for o in ['log', 'bic']:
+                xTickMarks.append(o)
+                tmp = 0
+                for m in self.values[s].keys():
+                    x.append(t)
+                    if o == 'log':
+                        y.append(-self.values[s][m][o])
+                    else:
+                        y.append(self.values[s][m][o])
+                    c.append(self.colors_m[m])
+                    t+=1.0
+                    tmp+=1
+                    if tmp==1:
+                        xTickPos.append(t+1.0)
+                t+=1.0                
+                xTickMarks.append(s)
+                xTickPos.append(t-0.5)
+            t+=2.0
+            xTickMarks.pop(-1)
+            xTickPos.pop(-1)
+
+        ax = fig_4.add_subplot(1,1,1)
+        bar_ = ax.bar(x, y, color = c)
+        ax.set_xticks(xTickPos)
+        ax.set_xticklabels(xTickMarks)
+        for i, m in zip(range(4),self.values[s].keys()):
+            bar_[i].set_label(m)
+        legend()        
+        
+
+        fig_4.savefig(name+"_bar_best_choice.pdf")
+
+    def writeComparativePlot(self, name, colors, names):
+        rcParams['ytick.labelsize'] = 8
+        rcParams['xtick.labelsize'] = 8        
+        #################################################################################################
+        fig_1 = figure(figsize = (10,5)) # for each model all subject            
+        i = 1
+        subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
+        m_order = []
+        for s in subjects:
+            ax = fig_1.add_subplot(2,3,i)
+            for m in self.pareto.keys():
+                m_order.append(m)
+                if s in self.pareto[m].keys():
+                    ax.plot(self.pareto[m][s][:,3], self.pareto[m][s][:,4], 'o-', alpha = colors[m], color = self.colors_m[m[:-1]])
+            ax.set_title(s)
+            ax.grid()
+            if i == 1 or i == 4:
+                ax.set_ylabel("fit to RT")
+            if i == 3 or i == 4 or i == 5:
+                ax.set_xlabel("fit to choice")
+            ax.set_xlim(0,1)
+            ax.set_ylim(0,1)
+            i+=1
+
+        line2 = tuple([Line2D(range(1),range(1),marker='o', markersize = 2, markeredgecolor = self.colors_m[m[:-1]], alpha=colors[m],color=self.colors_m[m[:-1]], linewidth = 2) for m in self.pareto.keys()])
+        figlegend(line2,[names[m] for m in self.pareto.keys()], loc = 'lower right', bbox_to_anchor = (0.92, 0.18), fontsize = 10)
+
+        fig_1.savefig(name+"_pareto_front.pdf")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -496,129 +625,6 @@ class pareto():
                     p_test[m]['distance'][s] = dict({m:dict(zip(self.p_order[m],best_ind[5:]))})
         return data, p_test
             
-    def classifySubject(self):
-        models = self.data.keys()                
-        subjects = self.human.keys()
-        self.values = dict()
-        self.extremum = dict()                
-        for s in subjects:
-            self.extremum[s] = dict()            
-            self.values[s] = dict()
-            data_best_ind = dict()
-            for m in models:
-                self.extremum[s][m] = dict()
-                self.values[s][m] = dict()
-                data = []
-                for i in self.data[m][s].iterkeys():
-                    #max_gen = np.max(self.data[m][s][i][:,0])
-                    #size_max_gen = np.sum(self.data[m][s][i][:,0]==max_gen)
-                    tmp = np.hstack((np.ones((len(self.data[m][s][i]),1))*i,self.data[m][s][i]))                    
-                    #tmp = np.hstack((np.ones((size_max_gen,1))*i,self.data[m][s][i][-size_max_gen:]))
-                    data.append(tmp)
-                data = np.vstack(data)
-                data[:,3]-=2000.0
-                # LOG                
-                self.values[s][m]['log'] = np.max(data[:,3])
-                best_ind = np.argmax(data[:,3])
-                data_best_ind[m] = data[best_ind,5:]
-                gen = data[best_ind,1]
-                ind = data[best_ind,2]
-                # print s, data[best_ind,0], gen, ind
-                self.extremum[s][m] = dict(zip(self.p_order[m][0:],data_best_ind[m]))                
-                # BIC
-                self.values[s][m]['bic'] = 2.0*self.values[s][m]['log'] - float(len(self.p_order[m])-1)*np.log(self.N)
-               
-        self.best_extremum = dict({'bic':{m:[] for m in models},'log':{m:[] for m in models}})
-        self.p_test_extremum = dict({'bic':{},'log':{}})
-        for s in self.values.iterkeys():
-            for o in ['log', 'bic']:
-                best = np.argmax([self.values[s][m][o] for m in models])
-                self.best_extremum[o][models[best]].append(s)
-                self.p_test_extremum[o][s] = {models[best]:self.extremum[s][models[best]]}
-
-        # #writing parameters because fuck you that's why
-        # with open("parameters.txt", 'w') as f:
-        #     # for m in models:
-        #     for s in subjects:
-        #         # f.write(m+"\n")                
-        #         f.write(s+"\n")
-        #         # for s in subjects:
-        #         for m in models:                    
-        #             line=m+"\t"+" \t".join([k+"="+str(np.round(self.extremum[s][m][k],4)) for k in self.p_order[m][0:-1]])+"\tloglikelihood = "+str(self.values[s][m]['log'])+"\n"      
-        #             f.write(line)                
-        #         f.write("\n")
 
 
         return 
-
-    def timeConversion(self):
-        for o in self.p_test.iterkeys():
-            self.timing[o] = dict()
-            for s in self.p_test[o].iterkeys():
-                self.timing[o][s] = dict()
-                m = self.p_test[o][s].keys()[0]
-                parameters = self.p_test[o][s][m]
-                # MAking a sferes call to compute a time conversion
-                with open(self.case+"/"+s+".pickle", "rb") as f:
-                    data = pickle.load(f)
-                self.models[m].__init__(['s1', 's2', 's3'], ['thumb', 'fore', 'midd', 'ring', 'little'], parameters, sferes = True)
-                opt = EA(data, s, self.models[m])                                
-                for i in xrange(opt.n_blocs):
-                    opt.model.startBloc()
-                    for j in xrange(opt.n_trials):
-                        opt.model.computeValue(opt.state[i,j]-1, opt.action[i,j]-1, (i,j))
-                        opt.model.updateValue(opt.responses[i,j])
-                opt.fit[0] = float(np.sum(opt.model.value)) + 2000.0
-                self.timing[o][s][m] = [np.median(opt.model.reaction)]
-                opt.model.reaction = opt.model.reaction - np.median(opt.model.reaction)
-                self.timing[o][s][m].append(np.percentile(opt.model.reaction, 75)-np.percentile(opt.model.reaction, 25))
-                opt.model.reaction = opt.model.reaction / (np.percentile(opt.model.reaction, 75)-np.percentile(opt.model.reaction, 25))        
-                self.timing[o][s][m] = np.array(self.timing[o][s][m])
-                opt.fit[1] = float(-opt.leastSquares()) + 500.0
-                # # Check if coherent                 
-                ind = self.indd[o][s]
-                m2 = self.m_order[int(ind[0])]
-                if m != m2:
-                    sys.exit()
-                real = self.data[m][s][int(ind[1])][ind[3]][2:4]
-                
-                if np.sum(np.round(real,2)==np.round(opt.fit, 2))!= 2:
-                    print o, s, m
-                    print "from test :", opt.fit
-                    print "from sferes :", real
-
-    def timeConversion_singleStrategy(self, p_test, rank):
-        o = 'tche'
-        timing = {o:{}}
-        for m in ['bayesian','qlearning']:
-            timing[o][m] = dict()
-            for s in p_test[m][o].iterkeys():
-                timing[o][m][s] = dict()
-                parameters = p_test[m][o][s][m]
-                # MAking a sferes call to compute a time conversion
-                with open(self.case+"/"+s+".pickle", "rb") as f:
-                    data = pickle.load(f)
-                self.models[m].__init__(['s1', 's2', 's3'], ['thumb', 'fore', 'midd', 'ring', 'little'], parameters, sferes = True)
-                opt = EA(data, s, self.models[m])                                
-                for i in xrange(opt.n_blocs):
-                    opt.model.startBloc()
-                    for j in xrange(opt.n_trials):
-                        opt.model.computeValue(opt.state[i,j]-1, opt.action[i,j]-1, (i,j))
-                        opt.model.updateValue(opt.responses[i,j])                
-                # opt.fit[0] = float(np.sum(opt.model.value))
-                opt.fit[0] = 1.0 - (float(np.sum(opt.model.value)))/(self.N*np.log(0.2))
-                timing[o][m][s][m] = [np.median(opt.model.reaction)]
-                opt.model.reaction = opt.model.reaction - np.median(opt.model.reaction)
-                timing[o][m][s][m].append(np.percentile(opt.model.reaction, 75)-np.percentile(opt.model.reaction, 25))
-                opt.model.reaction = opt.model.reaction / (np.percentile(opt.model.reaction, 75)-np.percentile(opt.model.reaction, 25))        
-                timing[o][m][s][m] = np.array(timing[o][m][s][m])
-                opt.fit[1] = float(-opt.leastSquares())
-                #opt.fit[1] = 1.0 - (-opt.fit[1])/(np.power(2*self.human[s]['mean'][0], 2).sum())
-                # Check if coherent                                 
-                real = self.best_ind_single_strategy[m][s][3:5]
-                
-                if np.sum(np.round(real,2)==np.round(opt.fit, 2))!= 2:
-                    print o, s, m
-                    print "from test :", opt.fit
-                    print "from sferes :", real
-        return timing

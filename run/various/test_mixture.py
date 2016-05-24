@@ -27,12 +27,12 @@ for s in os.listdir("../../data/data_txt_3_repeat/"):
 
 
 
-parameters = "alpha=0.2141, beta=55.142, noise=0.1, length=10.0, weight=0.0309, threshold=1.397, sigma=0.0, kappa=1.0, shift=0.9791"
+parameters = "alpha=0.0, beta=89.9444, noise=0.0, length=10.0, weight=1.0, threshold=1.3454, sigma=20.0, kappa=0.8526, shift=0.1332"
 parameters = {p.split("=")[0]:float(p.split("=")[1]) for p in parameters.split(", ")}
 parameters['length'] = int(parameters['length'])
 model = CSelection()
 
-s = 'm'
+s = 'p'
 model.analysis_call(monkeys[s], rt_reg_monkeys[s], parameters)
 
 #####################
@@ -47,6 +47,7 @@ ylabel("action")
 subplot(412)
 plot(model.entropy_list[t_start:t_stop], 'o-')
 plot(model.sari[t_start:t_stop,-1], '--')
+plot(model.w_list[t_start:t_stop], '--*')
 ylabel("entropy")
 
 subplot(413)

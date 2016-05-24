@@ -75,7 +75,7 @@ void fusion(double *p_a, double *mb, double *mf, double beta) {
 	// std::cout << "fusion " << mf[0] << " " << mb[0] << std::endl;
 	// std::cout << "tmp=";
 	for (int i=0;i<4;i++) {				
-		tmp[i] = exp((mb[i]*mf[i])*beta);
+		tmp[i] = exp((mb[i]+mf[i])*beta);
 		// std::cout << tmp[i] << " ";
 		if (isinf(tmp[i])) {
 			tmp2[i] = 1;

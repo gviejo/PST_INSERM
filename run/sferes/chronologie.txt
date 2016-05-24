@@ -18,3 +18,12 @@ SFERES4
 
 SFERES5
 	Multiplication des qvalues pour fusion seulement
+	RT = Hb + Hf
+
+SFERES6
+	Comparaison sferes 4 vs sferes 5 entre fusion strategy
+	compare.py
+
+SFERES7
+	Q = QHb + QHf
+	RT = Hb + sigma * Hf
