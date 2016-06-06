@@ -95,7 +95,7 @@ class FSelection():
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
             # reaction[0] = float(H)        
-            reaction[0] = np.log2(0.25)+self.Hf
+            reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
             for j in xrange(self.n_element):            
                 self.inferenceModule()
                 self.evaluationModule()
@@ -105,7 +105,7 @@ class FSelection():
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
                 N = self.nb_inferences+1.0
                 # reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
-                reaction[j+1] = self.Hb + self.Hf
+                reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
                 # reaction[j+1] = H
                 self.sigmoideModule()
                 self.p_sigmoide[j+1] = self.pA            
@@ -205,7 +205,8 @@ class FSelection():
             self.fusionModule()
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            reaction[0] = float(H)        
+            # reaction[0] = float(H)        
+            reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
             self.Hb_list[i,0] = self.Hb
             for j in xrange(self.n_element):            
                 self.inferenceModule()
@@ -215,7 +216,8 @@ class FSelection():
                 self.p_ak[j+1] = self.p_a_final[self.current_action]                
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
                 N = self.nb_inferences+1.0
-                reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
+                # reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
+                reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
                 # reaction[j+1] = H
                 self.sigmoideModule()
                 self.p_sigmoide[j+1] = self.pA            
@@ -276,7 +278,7 @@ class FSelection():
     
     def fusionModule(self):
         np.seterr(invalid='ignore')
-        self.values_net = self.p_a_mb*self.values_mf
+        self.values_net = self.p_a_mb+self.values_mf
         tmp = np.exp(self.values_net*float(self.parameters['beta']))
         
         # print "fusion ", self.values_mf[self.current_action], " ", self.p_a_mb[self.current_action]
@@ -391,8 +393,8 @@ class CSelection():
             # print self.value[i]
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
             # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-            self.reaction[i] = self.Hb + self.Hf
-            # print self.reaction[i]
+            self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf            
+            
             self.updateValue(r)
 
         # ALIGN TO MEDIAN
@@ -479,7 +481,8 @@ class CSelection():
             self.value[i] = float(np.log(self.p_a_final[self.current_action])) 
             # print self.value[i]
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf
             # print self.reaction[i]
             self.updateValue(r)
             
@@ -638,7 +641,8 @@ class BayesianWorkingMemory():
             self.value[i] = float(np.log(self.p_a_mb[self.current_action])) 
             # print self.value[i]
             H = -(self.p_a_mb*np.log2(self.p_a_mb)).sum()
-            self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            self.reaction[i] = self.parameters['sigma']*self.Hb
             # print self.reaction[i]
             self.updateValue(r)
 
@@ -694,7 +698,8 @@ class BayesianWorkingMemory():
             self.value[i] = float(np.log(self.p_a_mb[self.current_action])) 
             # print self.value[i]
             H = -(self.p_a_mb*np.log2(self.p_a_mb)).sum()
-            self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            self.reaction[i] = self.parameters['sigma']*self.Hb
             # print self.reaction[i]
             self.updateValue(r)
 
@@ -806,7 +811,8 @@ class QLearning():
             self.value[i] = float(np.log(self.p_a_mf[self.current_action])) 
             # print self.value[i]
             H = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
-            self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            self.reaction[i] = self.parameters['sigma']*H
             # print self.reaction[i]
             self.updateValue(r)
 

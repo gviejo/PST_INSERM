@@ -25,5 +25,5 @@ SFERES6
 	compare.py
 
 SFERES7
-	Q = QHb + QHf
+	fusion Q = QHb + QHf
 	RT = Hb + sigma * Hf

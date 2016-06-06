@@ -6,10 +6,10 @@
 #include <iterator>
 #include <map>
 #include <math.h>
-#include "qlearning_call.cpp"
+// #include "qlearning_call.cpp"
 // #include "bayesian_call.cpp"
 // #include "selection_call.cpp"
-// #include "mixture_call.cpp"
+#include "mixture_call.cpp"
 // #include "fusion_call.cpp"
 
 using namespace std;
@@ -32,11 +32,10 @@ int main () {
 	double fit [2] = {0.0, 0.0};
 	fit[0] = 0.0 ; fit[1] = 0.0;
 
-	int N =  map_monkeys_length_trial['g'];
+	int N =  map_monkeys_length_trial['s'];
 
-	// sferes_call(fit, N, "../../data/data_txt/s", 0.671374, 0.12509, 0.170704, 0.551698, 0.722591, 0.138297, 0.271538, 0.659637, 0.539239, 0.686598 );
-	// sferes_call(fit, N, "../../data/data_txt_3_repeat/g", 0.31487,0.362754,0.793149,0.889519,0.0241067,0.397067,0.745926,0.258521,0.203302);
-	sferes_call(fit, N, "../../data/data_txt_3_repeat/g", 0.31487,0.362754,0.793149,0.889519,0.0241067);
+	sferes_call(fit, N, "../../data/data_txt_3_repeat/s", 0, 0.0969144, 0.291051, 0.111525, 1, 0, 0.20948, 1, 0.0907374);
+
 	std::cout << fit[0] << " " << fit[1] << std::endl;  
    	return 0;
 }

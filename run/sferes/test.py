@@ -10,19 +10,20 @@ from Models import *
 from Sferes import pareto
 import cPickle as pickle
 
-with open("SFERES_1_only_fusion_best_parameters.pickle", 'rb') as f:
+with open("SFERES_7_best_parameters.pickle", 'rb') as f:
 	data = pickle.load(f)
 
 
 front = pareto()
-parameters = data['tche']['m']['fusion']
-parameters['length'] = 3.0
-parameters['gain'] = 1.0
-parameters['sigma'] = 0.001
-print parameters
-model = FSelection()
-fit = model.sferes_call(front.monkeys['m'], front.rt_reg_monkeys['m'], parameters)
+parameters = data['distance']['s']['mixture']
+
+model = CSelection()
+fit = model.sferes_call(front.monkeys['s'], front.rt_reg_monkeys['s'], parameters)
 print fit[0], fit[1]
+
+
+
+sys.exit()
 
 figure()
 for i in xrange(1, 6):
