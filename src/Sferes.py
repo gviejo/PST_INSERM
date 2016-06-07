@@ -84,6 +84,7 @@ class pareto():
         self.zoom = dict()
         self.timing = dict()
         self.beh = dict()
+        self.hidden = dict()
         if self.directory != '':
             self.simpleLoadData()    
         
@@ -335,6 +336,31 @@ class pareto():
                 print data[line,2][0,0] - 50000.0, data[line,3][0,0] - 50000.0, "\n"
                 self.beh[o][s][m] = model.rt_model
 
+    def evaluateHiddenVariables(self):
+        t_start = 0
+        t_stop = 30
+        for o in self.p_test.keys():
+            self.hidden[o] = dict()
+            for s in self.p_test[o].keys():
+                m = self.p_test[o][s].keys()[0]
+                self.hidden[o][s] = dict({m:{}})                
+                parameters = self.p_test[o][s][m]            
+                model = self.models[m]
+                model.analysis_call(self.monkeys[s], self.rt_reg_monkeys[s], parameters)
+                if m == 'fusion':
+                    self.hidden[o][s][m]['sari'] = model.sari[t_start:t_stop]
+                    self.hidden[o][s][m]['entropy'] = model.entropy_list[t_start:t_stop]
+                    self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
+                    self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]
+                    self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]                    
+                elif m == 'mixture':
+                    self.hidden[o][s][m]['sari'] = model.sari[t_start:t_stop]
+                    self.hidden[o][s][m]['entropy'] = model.entropy_list[t_start:t_stop]
+                    self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
+                    self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]                    
+                    self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]                    
+
+
     def flattenFront(self):
         models = self.data.keys()                        
         subjects = self.data['fusion'].keys()
@@ -365,8 +391,15 @@ class pareto():
                 # print s, data[best_ind,0], gen, ind
                 self.extremum[s][m] = dict(zip(self.p_order[m][0:],data_best_ind[m]))                
                 # BIC
-                self.values[s][m]['bic'] = np.min(-2.0*self.values[s][m]['log'] + float(len(self.p_order[m]))*np.log(self.N[s]))
-               
+                self.values[s][m]['bic'] = np.min(-self.values[s][m]['log'] + float(len(self.p_order[m]))*np.log(self.N[s]))
+                print s, m
+                print "-ln(L) =", -1.0*self.values[s][m]['log']
+                print "BIC = ", self.values[s][m]['bic']
+                print "k = ", float(len(self.p_order[m]))
+                print "n = ", np.log(self.N[s])
+                print float(len(self.p_order[m]))*np.log(self.N[s])
+                print "\n"
+
         self.best_extremum = dict({'bic':{m:[] for m in models},'log':{m:[] for m in models}})
         self.p_test_extremum = dict({'bic':{},'log':{}})
         for s in self.values.iterkeys():
@@ -437,8 +470,8 @@ class pareto():
                 ax.set_ylabel("fit to RT")
             if i == 3 or i == 4 or i == 5:
                 ax.set_xlabel("fit to choice")
-            ax.set_xlim(0,1)
-            ax.set_ylim(0,1)
+            # ax.set_xlim(0,1)
+            # ax.set_ylim(0,1)
             i+=1 
 
         line2 = tuple([Line2D(range(1),range(1),marker='o', markersize = 2, markeredgecolor = self.colors_m[m], alpha=1.0,color=self.colors_m[m], linewidth = 2) for m in self.pareto.keys()])
@@ -517,6 +550,92 @@ class pareto():
         
 
         fig_4.savefig(name+"_bar_best_choice.pdf")
+
+        #################################################################################################
+        for o in self.hidden.keys():
+            for s in self.hidden[o].iterkeys():
+
+                m = self.hidden[o][s].keys()[0]
+                timeline = self.hidden[o][s][m]['sari'][:,-1]
+
+                fig_x = figure(figsize = (15,10))
+                subplots_adjust(wspace = 0.3, left = 0.1, right = 0.9)
+                title_ = o+" | "+s+" | "+m
+                subplot(511)
+                start = 0
+                for i in xrange(len(timeline)-1):                                                            
+                    if timeline[i+1]-timeline[i] == 1.0:
+                        axvspan(start,i+0.5, color = 'red', alpha = 0.6)                                            
+                        start = i+0.5
+                    elif timeline[i+1]-timeline[i] == -1.0:
+                        axvspan(start,i+0.5, color = 'green', alpha = 0.6)                        
+                        start = i+0.5
+                plot(self.hidden[o][s][m]['sari'][:,2]*0.25, 'o-')
+                title(title_)
+                ylabel("action")
+                
+                subplot(512)
+                plot(self.hidden[o][s][m]['entropy'][:], 'o-')
+                start = 0
+                for i in xrange(len(timeline)-1):                                                            
+                    if timeline[i+1]-timeline[i] == 1.0:
+                        axvspan(start,i+0.5, color = 'red', alpha = 0.6)                                            
+                        start = i+0.5
+                    elif timeline[i+1]-timeline[i] == -1.0:
+                        axvspan(start,i+0.5, color = 'green', alpha = 0.6)                        
+                        start = i+0.5
+                ylabel("entropy")
+                legend(('Hbased', 'Hfree'))
+
+                subplot(513)
+                plot(self.hidden[o][s][m]['N'], 'o-')
+                start = 0
+                for i in xrange(len(timeline)-1):                                                            
+                    if timeline[i+1]-timeline[i] == 1.0:
+                        axvspan(start,i+0.5, color = 'red', alpha = 0.6)                                            
+                        start = i+0.5
+                    elif timeline[i+1]-timeline[i] == -1.0:
+                        axvspan(start,i+0.5, color = 'green', alpha = 0.6)                        
+                        start = i+0.5                
+                ylabel("N")
+                
+                subplot(514)
+                [plot(self.hidden[o][s][m]['Qfree'][:,i], 'o-', label = str(i)) for i in xrange(4)]
+                start = 0
+                for i in xrange(len(timeline)-1):                                                            
+                    if timeline[i+1]-timeline[i] == 1.0:
+                        axvspan(start,i+0.5, color = 'red', alpha = 0.6)                                            
+                        start = i+0.5
+                    elif timeline[i+1]-timeline[i] == -1.0:
+                        axvspan(start,i+0.5, color = 'green', alpha = 0.6)                        
+                        start = i+0.5
+                ylabel("Q(free)")
+                legend()
+                
+                subplot(515)
+                [plot(self.hidden[o][s][m]['Qbased'][:,i], 'o-', label = str(i)) for i in xrange(4)]
+                start = 0
+                for i in xrange(len(timeline)-1):                                                            
+                    if timeline[i+1]-timeline[i] == 1.0:
+                        axvspan(start,i+0.5, color = 'red', alpha = 0.6)                                            
+                        start = i+0.5
+                    elif timeline[i+1]-timeline[i] == -1.0:
+                        axvspan(start,i+0.5, color = 'green', alpha = 0.6)                        
+                        start = i+0.5
+                if m == 'mixture':
+                    ylabel("Q(based)")
+                elif m == 'fusion':
+                    ylabel("Q(final)")
+
+                legend()
+
+
+                fig_x.savefig(name+"_evaluation_hidden_var_"+title_+".pdf", orientation = 'portrait')
+
+        os.system("pdftk "+name+"_evaluation_hidden_var_* cat output "+name+"_evaluation_hidden_var.pdf")
+        os.system("rm "+name+"_evaluation_hidden_var_*")
+        #################################################################################################
+
 
     def writeComparativePlot(self, name, colors, names):
         rcParams['ytick.labelsize'] = 8

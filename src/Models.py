@@ -157,6 +157,7 @@ class FSelection():
         self.w_list = np.zeros(self.N)
         self.entropy_list = np.zeros((self.N,2))
         self.free_list = np.zeros((self.N,4))
+        self.based_list = np.zeros((self.N,4))
         self.biais_list = np.zeros((self.N,4))
         self.delta_list = np.zeros((self.N,4))
         self.inference_list = np.zeros((self.N,1))
@@ -212,6 +213,7 @@ class FSelection():
                 self.inferenceModule()
                 self.evaluationModule()
                 self.Hb_list[i,j+1] = self.Hb
+                q_values[j+1] = self.p_a_mb
                 self.fusionModule()                
                 self.p_ak[j+1] = self.p_a_final[self.current_action]                
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
@@ -229,6 +231,8 @@ class FSelection():
             self.entropy_list[i,0] = np.dot(self.p_decision, self.Hb_list[i])
             self.entropy_list[i,1] = self.Hf
             self.free_list[i] = self.p_a_mf
+            tmp = np.dot(self.p_decision,q_values)
+            self.based_list[i] = tmp/tmp.sum()
             self.biais_list[i] = self.spatial_biases            
             if self.n_element:
                 self.inference_list[i] = np.dot(self.p_decision, np.arange(int(self.parameters['length'])+1))
@@ -432,6 +436,7 @@ class CSelection():
         self.w_list = np.zeros(self.N)
         self.entropy_list = np.zeros((self.N,2))
         self.free_list = np.zeros((self.N,4))
+        self.based_list = np.zeros((self.N,4))
         self.biais_list = np.zeros((self.N,4))
         self.delta_list = np.zeros((self.N,4))
         self.inference_list = np.zeros((self.N,1))
@@ -474,6 +479,7 @@ class CSelection():
             self.entropy_list[i,0] = self.Hb
             self.entropy_list[i,1] = self.Hf
             self.free_list[i] = self.p_a_mf
+            self.based_list[i] = self.p_a_mb
             self.biais_list[i] = self.spatial_biases            
             self.inference_list[i] = self.nb_inferences            
             ##########################

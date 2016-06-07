@@ -52,9 +52,10 @@ front.rankDistance()
 front.retrieveRanking()
 front.flattenFront()
 front.evaluate()
+front.evaluateHiddenVariables()
 front.writePlot(options.input)
 front.writeParameters(options.input)
-os.system("pdftk "+options.input+"_pareto_front.pdf "+options.input+"_mixed_pareto_front.pdf "+options.input+"_evaluation_sferes_call.pdf "+options.input+"_bar_best_choice.pdf cat output "+options.input+"_all_plot.pdf")
+os.system("pdftk "+options.input+"_pareto_front.pdf "+options.input+"_mixed_pareto_front.pdf "+options.input+"_evaluation_sferes_call.pdf "+options.input+"_bar_best_choice.pdf "+options.input+"_evaluation_hidden_var.pdf cat output "+options.input+"_all_plot.pdf")
 os.system("evince "+options.input+"_all_plot.pdf")
 
 
