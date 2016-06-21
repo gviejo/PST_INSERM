@@ -11,7 +11,7 @@ SFERES2
 
 SFERES3
 	same as sferes 2
-
+	RT = log(N)^sigma + Hfinal
 
 SFERES4
 	RT = Hb + Hf

@@ -359,6 +359,7 @@ class pareto():
                     self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
                     self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]                    
                     self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]                    
+                    self.hidden[o][s][m]['w'] = model.w_list[t_start:t_stop]
 
 
     def flattenFront(self):
@@ -392,13 +393,6 @@ class pareto():
                 self.extremum[s][m] = dict(zip(self.p_order[m][0:],data_best_ind[m]))                
                 # BIC
                 self.values[s][m]['bic'] = np.min(-self.values[s][m]['log'] + float(len(self.p_order[m]))*np.log(self.N[s]))
-                print s, m
-                print "-ln(L) =", -1.0*self.values[s][m]['log']
-                print "BIC = ", self.values[s][m]['bic']
-                print "k = ", float(len(self.p_order[m]))
-                print "n = ", np.log(self.N[s])
-                print float(len(self.p_order[m]))*np.log(self.N[s])
-                print "\n"
 
         self.best_extremum = dict({'bic':{m:[] for m in models},'log':{m:[] for m in models}})
         self.p_test_extremum = dict({'bic':{},'log':{}})
@@ -576,6 +570,8 @@ class pareto():
                 
                 subplot(512)
                 plot(self.hidden[o][s][m]['entropy'][:], 'o-')
+                if m == 'mixture':
+                    plot(self.hidden[o][s][m]['w'][:], '*-')
                 start = 0
                 for i in xrange(len(timeline)-1):                                                            
                     if timeline[i+1]-timeline[i] == 1.0:
@@ -585,7 +581,10 @@ class pareto():
                         axvspan(start,i+0.5, color = 'green', alpha = 0.6)                        
                         start = i+0.5
                 ylabel("entropy")
-                legend(('Hbased', 'Hfree'))
+                if m == 'mixture':
+                    legend(('Hbased', 'Hfree', 'weight'))
+                else:
+                    legend(('Hbased', 'Hfree'))
 
                 subplot(513)
                 plot(self.hidden[o][s][m]['N'], 'o-')
@@ -609,7 +608,7 @@ class pareto():
                     elif timeline[i+1]-timeline[i] == -1.0:
                         axvspan(start,i+0.5, color = 'green', alpha = 0.6)                        
                         start = i+0.5
-                ylabel("Q(free)")
+                ylabel("P(free)")
                 legend()
                 
                 subplot(515)
@@ -622,10 +621,8 @@ class pareto():
                     elif timeline[i+1]-timeline[i] == -1.0:
                         axvspan(start,i+0.5, color = 'green', alpha = 0.6)                        
                         start = i+0.5
-                if m == 'mixture':
-                    ylabel("Q(based)")
-                elif m == 'fusion':
-                    ylabel("Q(final)")
+                
+                ylabel("P(based)")
 
                 legend()
 
