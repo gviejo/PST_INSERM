@@ -85,6 +85,7 @@ class pareto():
         self.timing = dict()
         self.beh = dict()
         self.hidden = dict()
+        self.mb_role = dict()
         if self.directory != '':
             self.simpleLoadData()    
         
@@ -321,6 +322,7 @@ class pareto():
             self.zoom[s] = np.hstack((self.mixed[s][:,4:6], self.distance[s][:,1:2], np.vstack(self.owa[s]), np.vstack(self.tche[s]), np.vstack(self.mixed[s][:,0])))
  
     def evaluate(self):
+        # evaluate for mid frond
         for o in self.p_test.keys():
             self.beh[o] = dict()
             for s in self.p_test[o].keys():
@@ -335,14 +337,27 @@ class pareto():
                 print fit[0], fit[1]
                 print data[line,2][0,0] - 50000.0, data[line,3][0,0] - 50000.0, "\n"
                 self.beh[o][s][m] = model.rt_model
+        # evaluate for rt extremum
+        self.beh_rt_extremum = dict()
+        for s in self.extremum_rt.iterkeys():
+            self.beh_rt_extremum[s] = dict()
+            for m in ['fusion', 'mixture']:
+                parameters = self.extremum_rt[s][m]
+                model = self.models[m]
+                fit = model.sferes_call(self.monkeys[s], self.rt_reg_monkeys[s], parameters)
+                self.beh_rt_extremum[s][m] = model.rt_model
+
 
     def evaluateHiddenVariables(self):
         t_start = 0
         t_stop = 30
+        # for mb_role plot
+        for s in self.N.keys():
+            self.mb_role[s] = dict()            
         for o in self.p_test.keys():
             self.hidden[o] = dict()
-            for s in self.p_test[o].keys():
-                m = self.p_test[o][s].keys()[0]
+            for s in self.p_test[o].keys():                
+                m = self.p_test[o][s].keys()[0]                
                 self.hidden[o][s] = dict({m:{}})                
                 parameters = self.p_test[o][s][m]            
                 model = self.models[m]
@@ -352,7 +367,7 @@ class pareto():
                     self.hidden[o][s][m]['entropy'] = model.entropy_list[t_start:t_stop]
                     self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
                     self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]
-                    self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]                    
+                    self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]
                 elif m == 'mixture':
                     self.hidden[o][s][m]['sari'] = model.sari[t_start:t_stop]
                     self.hidden[o][s][m]['entropy'] = model.entropy_list[t_start:t_stop]
@@ -360,6 +375,10 @@ class pareto():
                     self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]                    
                     self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]                    
                     self.hidden[o][s][m]['w'] = model.w_list[t_start:t_stop]
+
+                # for mb_role plot
+                self.mb_role[s][o[0:3]+" "+m] = model.inference_list.flatten()
+
 
 
     def flattenFront(self):
@@ -401,6 +420,41 @@ class pareto():
                 best = np.argmin([self.values[s][m][o] for m in models])
                 self.best_extremum[o][models[best]].append(s)
                 self.p_test_extremum[o][s] = {models[best]:self.extremum[s][models[best]]}
+
+        # the same but for rt 
+        # down to parameters to test it        
+        self.values_rt = dict()
+        self.extremum_rt = dict()                
+        for s in subjects:
+            self.extremum_rt[s] = dict()            
+            self.values_rt[s] = dict()
+            data_best_ind = dict()
+            for m in models:
+                self.extremum_rt[s][m] = dict()
+                self.values_rt[s][m] = dict()
+                data = []
+                for i in self.data[m][s].iterkeys():
+                    #max_gen = np.max(self.data[m][s][i][:,0])
+                    #size_max_gen = np.sum(self.data[m][s][i][:,0]==max_gen)
+                    tmp = np.hstack((np.ones((len(self.data[m][s][i]),1))*i,self.data[m][s][i]))                    
+                    #tmp = np.hstack((np.ones((size_max_gen,1))*i,self.data[m][s][i][-size_max_gen:]))
+                    data.append(tmp)
+                data = np.vstack(data)
+                data[:,4] -= 50000.0                
+                self.values_rt[s][m] = np.max(data[:,4])
+                best_ind = np.argmax(data[:,4])
+                data_best_ind[m] = data[best_ind,5:]
+                gen = data[best_ind,1]
+                ind = data[best_ind,2]
+                # print s, data[best_ind,0], gen, ind
+                self.extremum_rt[s][m] = dict(zip(self.p_order[m][0:],data_best_ind[m]))                
+
+        # self.best_extremum_rt = dict({'bic':{m:[] for m in models},'log':{m:[] for m in models}})
+        # self.p_test_extremum_rt = dict()
+        # for s in self.values_rt.iterkeys():            
+        #         best = np.argmin([self.values_rt[s][m][o] for m in models])
+        #         self.best_extremum[o][models[best]].append(s)
+        #         self.p_test_extremum[o][s] = {models[best]:self.extremum_rt[s][models[best]]}
 
     def writeParameters(self, filename_):
         "Nicely print parameters in a file"
@@ -499,7 +553,37 @@ class pareto():
 
                 i+=1
 
-        fig_3.savefig(name+"_evaluation_sferes_call.pdf")
+        fig_3.savefig(name+"_evaluation_sferes_call_mid.pdf")
+
+        fig_3_bis = figure(figsize = (10, 5))
+        subplots_adjust(wspace = 0.3, left = 0.1, right = 0.9)
+
+        i = 1        
+        for s in subjects:
+            for n in xrange(1, 6):            
+                ax = fig_3_bis.add_subplot(5,5,i)
+                for m in self.beh_rt_extremum[s].keys():                                        
+                    index = np.where(self.rt_reg_monkeys[s][:,0] == n)[0]
+                    ax.plot(self.beh_rt_extremum[s][m][index], 'o-', color = self.colors_m[m], label = m)
+
+                ax.plot(self.rt_reg_monkeys[s][index,1], '-', color = 'black')
+                ax.fill_between(np.arange(len(index)), self.rt_reg_monkeys[s][index,1]+self.rt_reg_monkeys[s][index,2], self.rt_reg_monkeys[s][index,1]-self.rt_reg_monkeys[s][index,2], color = 'black', alpha = 0.4)                
+                ax.set_xlim(-1, len(index))
+                ax.axvline(self.rt_reg_monkeys[s][index[0],0]-0.5,  color = 'grey', alpha = 0.5)
+                if i < 21:
+                    ax.set_xticks([])
+                if i in [1,6,11,16,21]:
+                    ax.set_ylabel(s)
+                if i >= 21:
+                    # ax.set_xticks(np.arange(1,len(index)+1, 2))
+                    ax.set_xlabel(str(int(self.rt_reg_monkeys[s][index[0],0]))+" search | 7 repeat", fontsize = 7)
+
+                i+=1
+
+        fig_3_bis.savefig(name+"_evaluation_sferes_call_rt_extremum.pdf")
+        os.system("pdftk "+name+"_evaluation_sferes_call_mid.pdf "+name+"_evaluation_sferes_call_rt_extremum.pdf"+" cat output "+name+"_evaluation_sferes_call.pdf")
+        os.system("rm "+name+"_evaluation_sferes_call_rt_extremum.pdf")
+        os.system("rm "+name+"_evaluation_sferes_call_mid.pdf")
         #################################################################################################
         rcParams['ytick.labelsize'] = 12
         rcParams['xtick.labelsize'] = 12        
@@ -631,6 +715,19 @@ class pareto():
 
         os.system("pdftk "+name+"_evaluation_hidden_var_* cat output "+name+"_evaluation_hidden_var.pdf")
         os.system("rm "+name+"_evaluation_hidden_var_*")
+        #################################################################################################
+        for s in self.mb_role.keys():
+            fig_x = figure(figsize = (15,10))
+            subplots_adjust(wspace = 0.3, left = 0.1, right = 0.9)
+            nb_subplots = len(self.mb_role[s].keys())            
+            for x, i in zip(self.mb_role[s].keys(),range(1,nb_subplots+1)):
+                subplot(nb_subplots,1,i)
+                plot(self.mb_role[s][x])
+                ylabel(x)
+            fig_x.savefig(name+"_evaluation_role_mb_"+s+".pdf", orientation = 'portrait')
+        os.system("pdftk "+name+"_evaluation_role_mb_* cat output "+name+"_evaluation_role_mb.pdf")
+        os.system("rm "+name+"_evaluation_role_mb_*")
+
         #################################################################################################
 
 

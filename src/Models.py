@@ -94,8 +94,8 @@ class FSelection():
             self.fusionModule()
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            reaction[0] = float(H)        
-            # reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
+            # reaction[0] = float(H)        
+            reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
             for j in xrange(self.n_element):            
                 self.inferenceModule()
                 self.evaluationModule()
@@ -104,8 +104,8 @@ class FSelection():
                 self.p_ak[j+1] = self.p_a_final[self.current_action]                
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
                 N = self.nb_inferences+1.0
-                reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
-                # reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
+                # reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
+                reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
                 # reaction[j+1] = H
                 self.sigmoideModule()
                 self.p_sigmoide[j+1] = self.pA            
@@ -396,8 +396,8 @@ class CSelection():
             self.value[i] = float(np.log(self.p_a_final[self.current_action])) 
             # print self.value[i]
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-            # self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf            
+            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf            
             
             self.updateValue(r)
 
