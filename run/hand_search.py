@@ -109,7 +109,8 @@ for i in xrange(6):
 	
 	rt[i] = float(np.sum(reaction*np.round(model.p_decision.flatten(),3)))
 	various[i,0] = model.Hf
-
+	various[i,1] = np.dot(model.p_decision, model.Hb_list[i])	
+	model.updateValue(reward_chain[i])
 
 
 
@@ -123,6 +124,7 @@ subplot(312)
 plot(rt, 'o-')
 
 subplot(313)
-plot(various[:,0], label = 'Hf')
-
+plot(various[:,0],'o-', label = 'Hf')
+plot(various[:,1],'o-', label = 'Hb')
+legend()
 show()
