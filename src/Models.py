@@ -299,30 +299,31 @@ class FSelection():
             self.p_a_final = self.p_a_final/self.p_a_final.sum()        
 
     def updateValue(self, reward):
-        # print "R = ", reward
-        r = int((reward==1)*1)        
-        if self.parameters['noise']:
-            self.p_a = self.p_a*(1-self.parameters['noise'])+self.parameters['noise']*(1.0/self.n_action*np.ones(self.p_a.shape))
-            self.p_r_a = self.p_r_a*(1-self.parameters['noise'])+self.parameters['noise']*(0.5*np.ones(self.p_r_a.shape))
-        #Shifting memory            
-        if self.n_element < int(self.parameters['length']):
-            self.n_element+=1
-        self.p_a[1:self.n_element] = self.p_a[0:self.n_element-1]
-        self.p_r_a[1:self.n_element] = self.p_r_a[0:self.n_element-1]
-        self.p_a[0] = np.ones(self.n_action)*(1/float(self.n_action))
-        self.p_r_a[0] = np.ones((self.n_action, 2))*0.5
-        #Adding last choice                 
-        self.p_a[0] = 0.0
-        self.p_a[0, self.current_action] = 1.0
-        self.p_r_a[0, self.current_action] = 0.0
-        self.p_r_a[0, self.current_action, int(r)] = 1.0        
         # Updating model free
         r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
-        self.delta = float(r)-self.values_mf[self.current_action]        
+        self.delta = float(r)-self.values_mf[self.current_action]            
         self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
         index = range(self.n_action)
         index.pop(int(self.current_action))        
         self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
+        # Updating model based
+        if self.delta > -10.0:
+            r = int((reward==1)*1)        
+            if self.parameters['noise']:
+                self.p_a = self.p_a*(1-self.parameters['noise'])+self.parameters['noise']*(1.0/self.n_action*np.ones(self.p_a.shape))
+                self.p_r_a = self.p_r_a*(1-self.parameters['noise'])+self.parameters['noise']*(0.5*np.ones(self.p_r_a.shape))
+            #Shifting memory            
+            if self.n_element < int(self.parameters['length']):
+                self.n_element+=1
+            self.p_a[1:self.n_element] = self.p_a[0:self.n_element-1]
+            self.p_r_a[1:self.n_element] = self.p_r_a[0:self.n_element-1]
+            self.p_a[0] = np.ones(self.n_action)*(1/float(self.n_action))
+            self.p_r_a[0] = np.ones((self.n_action, 2))*0.5
+            #Adding last choice                 
+            self.p_a[0] = 0.0
+            self.p_a[0, self.current_action] = 1.0
+            self.p_r_a[0, self.current_action] = 0.0
+            self.p_r_a[0, self.current_action, int(r)] = 1.0        
 
 class CSelection():
     """ mixture strategy

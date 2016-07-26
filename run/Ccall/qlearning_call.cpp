@@ -66,8 +66,8 @@ void sferes_call(double * fit, int N, const char* data_dir, double alpha_, doubl
 	
 	///////////////////	
 	// parameters
-	double alpha=0.0+alpha_*(1.0-0.0); //alpha +
-	// double gamma=0.0+gamma_*(0.99-0.00); //alpha -
+	double alphap=0.0+alphap_*(1.0-0.0);
+	double alpham=0.0+alpham_*(1.0-0.0);
 	double beta=0.0+beta_*(100.0-0.0);
 	double sigma=0.0+(20.0-0.0)*sigma_;
 	double kappa=0.0+(1.0-0.0)*kappa_;
@@ -200,7 +200,11 @@ void sferes_call(double * fit, int N, const char* data_dir, double alpha_, doubl
 		// std::cout << values_mf[a] << std::endl;
 		double delta = reward - values_mf[a];
 		// std::cout << "delta =" << delta << std::endl;
-		values_mf[a]+=(alpha*delta);
+		if (r == 1) {
+			values_mf[a]+=(alphap*delta);	
+		} else if (r == 0) {
+			values_mf[a]+=(alpham*delta);	
+		}
 		// std::cout << "mf2 = ";
 		// for (int j=0;j<4;j++) {
 		// 	std::cout << values_mf[j] << " ";

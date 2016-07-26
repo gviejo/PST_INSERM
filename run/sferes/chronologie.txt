@@ -28,4 +28,8 @@ SFERES7
 	fusion Q = QHb + QHf
 	RT = Hb + sigma * Hf
 
+SFERES8
+	alpha +, alpha -
+	fusion Q = QHb + QHf
+	RT = Hb + sigma * Hf	
 
