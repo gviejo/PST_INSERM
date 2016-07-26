@@ -118,6 +118,7 @@ for i in xrange(6):
 	mat[0,i] = model.p_decision
 	mat[1,i] = model.p_retrieval
 	mat[2,i] = model.p_sigmoide
+	model.updateValue(reward_chain[i])
 
 
 
@@ -159,5 +160,10 @@ xlabel("N")
 ylabel("p(sigmoide)")
 
 
+
+subplot(313)
+plot(various[:,0],'o-', label = 'Hf')
+plot(various[:,1],'o-', label = 'Hb')
+legend()
 
 show()
