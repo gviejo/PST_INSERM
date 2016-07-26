@@ -62,7 +62,7 @@ double entropy(double *p) {
 	return -tmp;
 }
 // void sferes_call(double * fit, const char* data_dir, double alpha_, double beta_)
-void sferes_call(double * fit, int N, const char* data_dir, double alpha_, double beta_, double sigma_, double kappa_, double shift_) {
+void sferes_call(double * fit, int N, const char* data_dir, double alphap_, double alpham_, double beta_, double sigma_, double kappa_, double shift_) {
 	
 	///////////////////	
 	// parameters
