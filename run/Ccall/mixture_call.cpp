@@ -156,27 +156,27 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alphap_
 				n_element = 0;			
 				weigh = weight;
 				// RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-				double summ = 0.0;
-				for (int m=0;m<n_action;m++) { // normalise spatial bias
-					summ+=spatial_biases[m];
-				}
+				// double summ = 0.0;
+				// for (int m=0;m<n_action;m++) { // normalise spatial bias
+				// 	summ+=spatial_biases[m];
+				// }
 				
-				for (int m=0;m<n_action;m++) {					
-					values_mf[m] = spatial_biases[m]/summ;					
-					// std::cout << values_mf[m] << " ";
+				// for (int m=0;m<n_action;m++) {					
+				// 	values_mf[m] = spatial_biases[m]/summ;					
+				// 	// std::cout << values_mf[m] << " ";
 					
-				}
-				// std::cout << std::endl;
-				// shift bias
-				for (int m=0;m<n_action;m++) {
-					if (m == sari[i-1][2]-1) {
-						values_mf[m] *= (1.0-shift);		
-					} else {
-						values_mf[m] *= (shift/3.);
-					}
-				}
-				// spatial biases update
-				spatial_biases[sari[i][2]-1] += 1.0;
+				// }
+				// // std::cout << std::endl;
+				// // shift bias
+				// for (int m=0;m<n_action;m++) {
+				// 	if (m == sari[i-1][2]-1) {
+				// 		values_mf[m] *= (1.0-shift);		
+				// 	} else {
+				// 		values_mf[m] *= (shift/3.);
+				// 	}
+				// }
+				// // spatial biases update
+				// spatial_biases[sari[i][2]-1] += 1.0;
 			}
 		}
 		// START TRIAL //		
@@ -330,11 +330,11 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alphap_
 		// 	std::cout << values_mf[j] << " ";
 		// }
 		// std::cout << std::endl;	
-		for (int m=0;m<n_action;m++) {
-			if (m != a) {				
-				values_mf[m] += (1.0-kappa)*(0.0-values_mf[m]);
-			}
-		}
+		// for (int m=0;m<n_action;m++) {
+		// 	if (m != a) {				
+		// 		values_mf[m] += (1.0-kappa)*(0.0-values_mf[m]);
+		// 	}
+		// }
 
 	}
 	

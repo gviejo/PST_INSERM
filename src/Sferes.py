@@ -63,11 +63,11 @@ class pareto():
                             # "selection":KSelection(),
                             "mixture":CSelection()})
 
-        self.p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
-                            'qlearning':['alpha','beta', 'sigma', 'kappa', 'shift'],
+        self.p_order = dict({'fusion':['alphap','alpham','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
+                            'qlearning':['alphap','alpham','beta', 'sigma', 'kappa', 'shift'],
                             'bayesian':['length','noise','threshold', 'sigma'],
                             'selection':['beta','eta','length','threshold','noise','sigma', 'sigma_rt'],
-                            'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift']})
+                            'mixture':['alphap','alpham', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift']})
 
         self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture']
         self.colors_m = dict({'fusion':'r', 'bayesian':'g', 'qlearning':'grey', 'selection':'b', 'mixture':'y'})

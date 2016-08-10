@@ -29,7 +29,8 @@ for s in os.listdir("../data/data_txt_3_repeat/"):
 model = FSelection()
 
 parameters = {	
-	'alpha':0.5,
+	'alphap':0.5,
+	'alpham':0.5,
 
 	'beta':2.0,
 	'gamma':3.0,

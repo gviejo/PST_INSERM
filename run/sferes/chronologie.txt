@@ -33,3 +33,11 @@ SFERES8
 	fusion Q = QHb + QHf
 	RT = Hb + sigma * Hf	
 
+SFERES9
+	alpha +, alpha -
+	pas de reset de Q-Learning
+	pas de spatial biais
+	pas de shift
+	pas de forgetting
+
+
