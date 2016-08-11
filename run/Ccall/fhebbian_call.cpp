@@ -370,6 +370,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 				values_heb[last_action+s*n_action][a] += alpha * (0.0 - values_heb[last_action+s*n_action][m]);						
 			}
 		}
+		last_action = a;
 
 
 		
