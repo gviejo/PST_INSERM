@@ -341,7 +341,7 @@ class pareto():
         self.beh_rt_extremum = dict()
         for s in self.extremum_rt.iterkeys():
             self.beh_rt_extremum[s] = dict()
-            for m in ['fusion', 'mixture']:
+            for m in ['fusion']:
                 parameters = self.extremum_rt[s][m]
                 model = self.models[m]
                 fit = model.sferes_call(self.monkeys[s], self.rt_reg_monkeys[s], parameters)

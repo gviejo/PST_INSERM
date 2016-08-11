@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # To hand search a solution for m and p monkeys
+# use of hebbian model for model-free
 
 import sys
 import os
@@ -9,7 +10,7 @@ import numpy as np
 from pylab import *
 sys.path.append("../src")
 
-from Models import FSelection 
+from Models import HFSelection 
 
 def SoftMaxValues(values, beta):
     tmp = np.exp(values*float(beta))
@@ -26,14 +27,13 @@ for s in os.listdir("../data/data_txt_3_repeat/"):
 		N[s.split(".")[0]] = len(monkeys[s.split(".")[0]])               
 
 
-model = FSelection()
+model = HFSelection()
 
 parameters = {	
-	'alphap':0.9,
-	'alpham':0.5,
+	'alpha':0.01,
 
 	'beta':2.0,
-	'gamma':3.0,
+	'gamma':5.0,
 
 	'noise':0.1,
 	'length':5,
@@ -42,23 +42,15 @@ parameters = {
 	'threshold':1.0, 
 	
 	'sigma':1.0, 
-	'kappa':0.1,
-	'shift':0.9
-}
+	}
 
 
 model.analysis_call(monkeys['m'][0:2000], rt_reg_monkeys['m'][0:2000], parameters)
 
+
 # INIT
 model.n_element = 0
-# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-# model.values_mf = model.spatial_biases/model.spatial_biases.sum()
-# shift bias
-# REMOVED SHIFT FOR THE MOMENT
-# tmp = model.values_mf[0] # On suppose que 0 est la derniere action
-# model.values_mf *= model.parameters['shift']/3.
-# model.values_mf[0] = tmp*(1.0-model.parameters['shift'])
-model.values_mf = np.zeros(4)
+
 
 action_chain = [1,2,3,3,3,3]
 reward_chain = [0,0,1,1,1,1]
@@ -73,8 +65,10 @@ mat = np.zeros((3,6,parameters['length']+1))
 for i in xrange(6):
 	model.current_action = action_chain[i]
 	r = reward_chain[i]
-	model.p_a_mf = SoftMaxValues(model.values_mf, parameters['gamma'])
-	model.Hf = -(model.p_a_mf*np.log2(model.p_a_mf)).sum()
+	# SEARCH OR REPEAT
+	model.state = model.sari[i][4]
+	model.p_a_hebbian = SoftMaxValues(model.values_hebbian[model.last_action+model.n_action*model.state], model.parameters['gamma'])    
+	model.Hf = -(model.p_a_hebbian*np.log2(model.p_a_hebbian)).sum()
 	# BAYESIAN CALL
 	model.p = model.uniform[:,:]
 	model.Hb = model.max_entropy
@@ -87,7 +81,7 @@ for i in xrange(6):
 	
 	reaction = np.zeros(int(model.parameters['length'])+1)
 	# START            
-	model.sigmoideModule(max_entropy[i])
+	model.sigmoideModule()
 	model.p_sigmoide[0] = model.pA
 	model.p_decision[0] = model.pA
 	model.p_retrieval[0] = 1.0-model.pA	
@@ -106,7 +100,7 @@ for i in xrange(6):
 		# reaction[j+1] = model.Hb + model.parameters['sigma']*model.Hf        
 		# reaction[j+1] = np.log2(model.nb_inferences+1.0)
 		reaction[j+1] = model.nb_inferences
-		model.sigmoideModule(max_entropy[i])
+		model.sigmoideModule()
 		model.p_sigmoide[j+1] = model.pA            
 		model.p_decision[j+1] = model.pA*model.p_retrieval[j]            
 		model.p_retrieval[j+1] = (1.0-model.pA)*model.p_retrieval[j]                            
@@ -117,7 +111,7 @@ for i in xrange(6):
 	rt[i] = float(np.sum(reaction*np.round(model.p_decision.flatten(),3)))
 	various[i,0] = model.Hf
 	various[i,1] = model.Hb	
-	various[i,2] = model.delta
+	
 	mat[0,i] = model.p_decision
 	mat[1,i] = model.p_retrieval
 	mat[2,i] = model.p_sigmoide	
@@ -128,44 +122,37 @@ for i in xrange(6):
 # FIGURE
 
 figure()
-subplot(421)
+subplot(331)
 plot(rt_reg_monkeys['m'][9:15,1], 'o-', label = 'rt singe m')
 legend()
 
-subplot(423)
+subplot(334)
 plot(rt, 'o-', label = 'rt model')	
 legend()
 
-subplot(425)
+subplot(337)
 plot(various[:,0], 'o-', label = 'Hf')
 plot(various[:,1], 'o-', label = 'Hb')
 ylim(0, 2.1)
 legend()
 
-subplot(427)
-plot(various[:,2], 'o-', label = 'delta')
-legend()
-
-subplot(322)
+subplot(332)
 imshow(mat[0].transpose(), origin = 'lower', interpolation = 'nearest', vmin = 0, vmax = 1)
 xlabel("N")
 ylabel("p(decision)")
 
-subplot(324)
+subplot(335)
 imshow(mat[1].transpose(), origin = 'lower', interpolation = 'nearest', vmin = 0, vmax = 1)
 xlabel("N")
 ylabel("p(retrieval)")
 
-subplot(326)
+subplot(3,3,8)
 imshow(mat[2].transpose(), origin = 'lower', interpolation = 'nearest', vmin = 0, vmax = 1)
 xlabel("N")
 ylabel("p(sigmoide)")
 
+subplot(1,3,3)
+imshow(model.values_hebbian, interpolation = 'nearest', vmin = 0, vmax = 1)
 
-
-subplot(313)
-plot(various[:,0],'o-', label = 'Hf')
-plot(various[:,1],'o-', label = 'Hb')
-legend()
 
 show()
