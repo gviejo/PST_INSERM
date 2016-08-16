@@ -117,7 +117,7 @@ for i in xrange(6):
 		if model.sari[i,4] == 0:
 			model.sigmoideModule(model.meta[search_pos,0])
 		elif model.sari[i,4] == 1:
-			model.sigmoideModule(model.meta[search_pos,1])
+			model.sigmoideModule(model.meta[repeat_pos,1])
 		model.p_sigmoide[j+1] = model.pA            
 		model.p_decision[j+1] = model.pA*model.p_retrieval[j]            
 		model.p_retrieval[j+1] = (1.0-model.pA)*model.p_retrieval[j]                            

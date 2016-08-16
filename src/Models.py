@@ -1219,6 +1219,10 @@ class MetaFSelection():
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
+        # META LEARNING
+        self.meta = np.zeros((30,2)) 
+        search_pos = 0
+        repeat_pos = 0
         for i in xrange(self.N):        
             if self.sari[i][1] != self.problem:                
                 if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
@@ -1226,22 +1230,36 @@ class MetaFSelection():
                     self.problem = self.sari[i][1]
                     self.n_element = 0
                     # # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    # self.values_mf = np.zeros(4)
-                    # self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-                    # # shift bias
-                    # tmp = self.values_mf[self.current_action]
-                    # self.values_mf *= self.parameters['shift']/3.
-                    # self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-                    # # spatial biaises update
-                    # self.spatial_biases[self.sari[i,2]-1] += 1.0
+                    self.values_mf = np.zeros(4)
+                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()
+                    # shift bias
+                    tmp = self.values_mf[self.current_action]
+                    self.values_mf *= self.parameters['shift']/3.
+                    self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+                    # spatial biaises update
+                    self.spatial_biases[self.sari[i,2]-1] += 1.0
+                    search_pos = 0
+                    repeat_pos = 0
 
 
             # START TRIAL
             self.current_action = self.sari[i][2]-1
             r = self.sari[i][0]            
 
+            # COMPUTE HFREE
             self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
             self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
+
+            # COMPUTE HMETA
+            if self.sari[i,4] == 0:
+                self.Hmeta = self.meta[search_pos,0]
+            elif self.sari[i,4] == 1:
+                self.Hmeta = self.meta[repeat_pos,1]
+
+            # NEED AN EVALUATION OF HFINAL
+            self.H_for_meta = np.zeros(int(self.parameters['length']+1))    
+            self.H_finale_for_meta = 0.0
+
             # BAYESIAN CALL
             self.p = self.uniform[:,:]
             self.Hb = self.max_entropy
@@ -1253,41 +1271,46 @@ class MetaFSelection():
             self.p_ak = np.zeros(int(self.parameters['length'])+1)        
             q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
             reaction = np.zeros(int(self.parameters['length'])+1)
-            # START            
+            
+            # NULL POSITION            
             self.sigmoideModule()
             self.p_sigmoide[0] = self.pA
             self.p_decision[0] = self.pA
-            self.p_retrieval[0] = 1.0-self.pA
-            # print "mf = ", self.values_mf
-
+            self.p_retrieval[0] = 1.0-self.pA            
             self.fusionModule()
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            # reaction[0] = float(H)        
-            reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
+            reaction[0] = float(H)        
+            self.H_for_meta[0] = H           
+
             for j in xrange(self.n_element):            
                 self.inferenceModule()
-                self.evaluationModule()
-                # print "mf = ", self.values_mf
+                self.evaluationModule()                
                 self.fusionModule()                
                 self.p_ak[j+1] = self.p_a_final[self.current_action]                
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
                 N = self.nb_inferences+1.0
-                # reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
-                reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
-                # reaction[j+1] = H
+                reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)                
+                self.H_for_meta[j+1] = H                
                 self.sigmoideModule()
                 self.p_sigmoide[j+1] = self.pA            
                 self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
                 self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
                 # print j+1, " p_ak=", self.p_ak[j+1], " p_decision=", self.p_decision[j+1], " p_retrieval=", self.p_retrieval[0]
-            
-            # print np.dot(self.p_decision,self.p_ak)
+                        
             self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
-            # print self.value[i]
-            # print self.p_decision
             self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
-            # print self.reaction[i]
+            self.H_finale_for_meta = np.dot(self.p_decision, self.H_for_meta)
+
+            # UPDATING META
+            if self.sari[i,4] == 0:
+                self.meta[search_pos,0] += self.parameters['eta']*(self.H_finale_for_meta-self.meta[search_pos,0])
+                search_pos += 1
+            elif self.sari[i,4] == 1:
+                self.meta[repeat_pos,1] += self.parameters['eta']*(self.H_finale_for_meta-self.meta[repeat_pos,1])
+                repeat_pos += 1
+
+
             self.updateValue(r)
 
         # ALIGN TO MEDIAN
@@ -1323,7 +1346,7 @@ class MetaFSelection():
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
         # META LEARNING
-        self.meta = np.zeros((20,2)) 
+        self.meta = np.zeros((30,2)) 
         search_pos = 0
         repeat_pos = 0
         ## LIST ####
@@ -1358,8 +1381,20 @@ class MetaFSelection():
             self.current_action = self.sari[i][2]-1
             r = self.sari[i][0]            
 
+            # COMPUTE HFREE
             self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
             self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
+
+            # COMPUTE HMETA
+            if self.sari[i,4] == 0:
+                self.Hmeta = self.meta[search_pos,0]
+            elif self.sari[i,4] == 1:
+                self.Hmeta = self.meta[repeat_pos,1]
+
+            # NEED AN EVALUATION OF HFINAL
+            self.H_for_meta = np.zeros(int(self.parameters['length']+1))    
+            self.H_finale_for_meta = 0.0
+
             # BAYESIAN CALL
             self.p = self.uniform[:,:]
             self.Hb = self.max_entropy
@@ -1371,23 +1406,21 @@ class MetaFSelection():
             self.p_ak = np.zeros(int(self.parameters['length'])+1)        
             q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
             reaction = np.zeros(int(self.parameters['length'])+1)
-            # META LEARNING
-            self.H_for_meta = np.zeros(int(self.parameters['length'])+1)
-            self.H_finale_for_meta = 0.0
-            # START            
+
+            
+            # NULL POSTION
             self.sigmoideModule()
             self.p_sigmoide[0] = self.pA
             self.p_decision[0] = self.pA
             self.p_retrieval[0] = 1.0-self.pA
             q_values[0] = self.p_a_mb
-
             self.fusionModule()
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
             self.H_for_meta[0] = H
-            # reaction[0] = float(H)        
-            reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
-            self.Hb_list[i,0] = self.Hb            
+            reaction[0] = float(H)
+            self.Hb_list[i,0] = self.Hb        
+
             for j in xrange(self.n_element):            
                 self.inferenceModule()
                 self.evaluationModule()
@@ -1398,13 +1431,9 @@ class MetaFSelection():
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
                 self.H_for_meta[j+1] = H
                 N = self.nb_inferences+1.0
-                # reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
-                reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
-                # reaction[j+1] = H
-                if self.sari[i,4] == 0:
-                    self.sigmoideModule(self.meta[search_pos,0])
-                elif self.sari[i,4] == 1:
-                    self.sigmoideModule(self.meta[repeat_pos,1])
+                reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)                
+                self.H_for_meta[j+1] = H                
+                self.sigmoideModule()
                 self.p_sigmoide[j+1] = self.pA            
                 self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
                 self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
@@ -1424,14 +1453,10 @@ class MetaFSelection():
                 self.inference_list[i] = 0            
             self.meta_list[i] = self.meta
             ##############
-
-            # print np.dot(self.p_decision,self.p_ak)
+            
             self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
-            # print self.value[i]
-            # print self.p_decision
             self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
-            # print self.reaction[i]
-            self.updateValue(r)
+
             # UPDATING META
             if self.sari[i,4] == 0:
                 self.meta[search_pos,0] += self.parameters['eta']*(self.H_finale_for_meta-self.meta[search_pos,0])
@@ -1439,6 +1464,8 @@ class MetaFSelection():
             elif self.sari[i,4] == 1:
                 self.meta[repeat_pos,1] += self.parameters['eta']*(self.H_finale_for_meta-self.meta[repeat_pos,1])
                 repeat_pos += 1
+
+            self.updateValue(r)
 
 
         # ALIGN TO MEDIAN
@@ -1468,9 +1495,9 @@ class MetaFSelection():
 
     def sigmoideModule(self, m = 2.0):
         np.seterr(invalid='ignore')
-        # x = 2*self.max_entropy-self.Hb-self.Hf        
+        x = 2*self.max_entropy-self.Hb-self.Hf +self.Hmeta       
         # x = m-self.Hb-self.Hf        
-        x = 2*self.max_entropy - self.Hb - self.Hf + m
+        # x = 2*self.max_entropy - self.Hb - self.Hf + m
         self.pA = 1/(1+((self.n_element-self.nb_inferences)**self.parameters['threshold'])*np.exp(-x*self.parameters['gain']))
         # print "n=",self.n_element," i=", self.nb_inferences, " Hb=", self.Hb, " Hf=", self.Hf, " x=", x, " p(A)=",self.pA, "threshold= ", self.parameters['threshold'], "gain = ", self.parameters['gain']
         return np.random.uniform(0,1) > self.pA
@@ -1500,7 +1527,7 @@ class MetaFSelection():
         self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
         index = range(self.n_action)
         index.pop(int(self.current_action))        
-        # self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
+        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
         # Updating model based
         # if self.delta > -10.0:
         r = int((reward==1)*1)        

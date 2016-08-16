@@ -61,16 +61,18 @@ class pareto():
                             "qlearning":QLearning(),
                             "bayesian":BayesianWorkingMemory(),
                             # "selection":KSelection(),
-                            "mixture":CSelection()})
+                            "mixture":CSelection(),
+                            "metaf":MetaFSelection()})
 
         self.p_order = dict({'fusion':['alphap','alpham','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
                             'qlearning':['alphap','alpham','beta', 'sigma', 'kappa', 'shift'],
                             'bayesian':['length','noise','threshold', 'sigma'],
                             'selection':['beta','eta','length','threshold','noise','sigma', 'sigma_rt'],
-                            'mixture':['alphap','alpham', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift']})
+                            'mixture':['alphap','alpham', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift'],
+                            'metaf':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift', 'eta']})
 
-        self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture']
-        self.colors_m = dict({'fusion':'r', 'bayesian':'g', 'qlearning':'grey', 'selection':'b', 'mixture':'y'})
+        self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture', 'metaf']
+        self.colors_m = dict({'fusion':'r', 'bayesian':'g', 'qlearning':'grey', 'selection':'b', 'mixture':'y', 'metaf':'k'})
         self.markers_type = dict({'distance':'*', 'owa': '^', 'tche': 'o'})
         self.data = dict()
         self.opt = dict()
@@ -232,8 +234,9 @@ class pareto():
                 self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
 
     def constructMixedParetoFrontier(self):
-        # subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
-        subjects = self.pareto['fusion'].keys()
+        subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
+        # subjects = self.pareto['fusion'].keys()
+
         for s in subjects:            
             tmp = []            
             for m in self.pareto.iterkeys():
@@ -341,7 +344,7 @@ class pareto():
         self.beh_rt_extremum = dict()
         for s in self.extremum_rt.iterkeys():
             self.beh_rt_extremum[s] = dict()
-            for m in ['fusion']:
+            for m in self.pareto.keys():
                 parameters = self.extremum_rt[s][m]
                 model = self.models[m]
                 fit = model.sferes_call(self.monkeys[s], self.rt_reg_monkeys[s], parameters)
@@ -375,6 +378,12 @@ class pareto():
                     self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]                    
                     self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]                    
                     self.hidden[o][s][m]['w'] = model.w_list[t_start:t_stop]
+                elif m == 'metaf':
+                    self.hidden[o][s][m]['sari'] = model.sari[t_start:t_stop]
+                    self.hidden[o][s][m]['entropy'] = model.entropy_list[t_start:t_stop]
+                    self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
+                    self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]
+                    self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]
 
                 # for mb_role plot
                 self.mb_role[s][o[0:3]+" "+m] = model.inference_list.flatten()
@@ -383,7 +392,8 @@ class pareto():
 
     def flattenFront(self):
         models = self.data.keys()                        
-        subjects = self.data['fusion'].keys()
+        # subjects = self.data['fmeta'].keys()
+        subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
         self.values = dict()
         self.extremum = dict()                
         for s in subjects:
@@ -477,7 +487,8 @@ class pareto():
         #################################################################################################
         fig_1 = figure(figsize = (10,5)) # for each model all subject            
         i = 1
-        subjects = self.pareto['fusion'].keys()        
+        # subjects = self.pareto['fusion'].keys()        
+        subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
         m_order = []
         for s in subjects:
             ax = fig_1.add_subplot(2,3,i)

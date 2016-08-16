@@ -140,28 +140,17 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 
 	///////////////////
 	// parameters
-	double alpha 	= 0.0 		+ alpha_*(1.0-0.0);	
-	double beta 	= 0.0 		+ beta_*(100.0-0.0);
-	double noise 	= 0.0 		+ noise_*(0.1-0.0);
-	int length 		= 1   		+(10-1) 			*length_;
-	double gain 	= 0.00001 	+ (10000.0-0.00001) *gain_;
-	double threshold= 0.0 		+ (20.0-0.0) 		*threshold_;
-	double sigma 	= 0.0 		+ (20.0-0.0) 		*sigma_;	
-	double gamma 	= 0.0 		+ (100.0-0.0)		*gamma_;
-	double kappa 	= 0.0 		+ (1.0-0.0)  		*kappa_;
-	double shift 	= 0.0 		+ (1.0-0.0)  		*shift_;
-	double eta 		= 0.0 		+ (1.0-0.0)  		*eta_;
-
-	// std::cout << "alpha : " << alpha << std::endl;
-	// std::cout << "beta : " << beta << std::endl;
-	// std::cout << "noise : " << noise << std::endl;
-	// std::cout << "length : " << length << std::endl;
-	// std::cout << "gain : " << gain << std::endl;
-	// std::cout << "threshold : " << threshold << std::endl;
-	// std::cout << "sigma : " << sigma << std::endl;
-	// std::cout << "gamma : " << gamma << std::endl;
-	// std::cout << "kappa : " << kappa << std::endl;
-	// std::cout << "shift : " << shift << std::endl;
+	double alpha 	= 0.0 		+ (1.0-0.0)			* alpha_;	
+	double beta 	= 0.0 		+ (100.0-0.0)		* beta_;
+	double noise 	= 0.0 		+ (0.1-0.0)			* noise_;
+	int length 		= 1   		+ (10-1) 			* length_;
+	double gain 	= 0.00001 	+ (10000.0-0.00001) * gain_;
+	double threshold= 0.0 		+ (20.0-0.0) 		* threshold_;
+	double sigma 	= 0.0 		+ (20.0-0.0) 		* sigma_;	
+	double gamma 	= 0.0 		+ (100.0-0.0)		* gamma_;
+	double kappa 	= 0.0 		+ (1.0-0.0)  		* kappa_;
+	double shift 	= 0.0 		+ (1.0-0.0)  		* shift_;
+	double eta 		= 0.0 		+ (1.0-0.0)  		* eta_;
 
 
 	int nb_trials = N;
@@ -398,7 +387,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			search_pos += 1;
 		} 
 		else if (sari[i][4] == 1) {
-			meta[repeat_pos][0] += eta * (H_finale - meta[repeat_pos][0]);
+			meta[repeat_pos][1] += eta * (H_finale - meta[repeat_pos][1]);
 			repeat_pos += 1;
 		}
 
