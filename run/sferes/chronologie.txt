@@ -40,6 +40,16 @@ SFERES9
 	pas de shift
 	pas de forgetting
 
+SFERES10
+	nouveau model : MetaFSelection
+	x = 2*Hmax - Hb - Hf + Hmeta
+	Hmeta = Hmeta + eta * ( Hfinale - Hmeta)
+	reset de Q-Learning
+	spatial biais
+	shift
+	forgetting
+	un seul alpha
+	RT = log(N)^sigma + Hfinal
 
 
 

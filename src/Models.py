@@ -1404,7 +1404,7 @@ class MetaFSelection():
                 if self.sari[i,4] == 0:
                     self.sigmoideModule(self.meta[search_pos,0])
                 elif self.sari[i,4] == 1:
-                    self.sigmoideModule(self.meta[search_pos,1])
+                    self.sigmoideModule(self.meta[repeat_pos,1])
                 self.p_sigmoide[j+1] = self.pA            
                 self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
                 self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
@@ -1470,7 +1470,7 @@ class MetaFSelection():
         np.seterr(invalid='ignore')
         # x = 2*self.max_entropy-self.Hb-self.Hf        
         # x = m-self.Hb-self.Hf        
-        x = 2*self.max_entropy - self.Hb - self.Hf + 2.0 * m
+        x = 2*self.max_entropy - self.Hb - self.Hf + m
         self.pA = 1/(1+((self.n_element-self.nb_inferences)**self.parameters['threshold'])*np.exp(-x*self.parameters['gain']))
         # print "n=",self.n_element," i=", self.nb_inferences, " Hb=", self.Hb, " Hf=", self.Hf, " x=", x, " p(A)=",self.pA, "threshold= ", self.parameters['threshold'], "gain = ", self.parameters['gain']
         return np.random.uniform(0,1) > self.pA

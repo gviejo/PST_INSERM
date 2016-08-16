@@ -11,7 +11,8 @@
 // #include "selection_call.cpp"
 // #include "mixture_call.cpp"
 // #include "fusion_call.cpp"
-#include "fhebbian_call.cpp"
+// #include "fhebbian_call.cpp"
+#include "metaf_call.cpp"
 
 using namespace std;
 
@@ -35,7 +36,7 @@ int main () {
 
 	int N =  map_monkeys_length_trial['s'];
 
-	sferes_call(fit, N, "../../data/data_txt_3_repeat/s", 0, 0.0969144, 0.291051, 0.111525, 1, 0, 0.20948, 0.1);
+	sferes_call(fit, N, "../../data/data_txt_3_repeat/s", 0, 0.0969144, 0.291051, 0.111525, 1, 0, 0.20948, 0.1, 0.1, 0.1, 0.1);
 
 	std::cout << fit[0] << " " << fit[1] << std::endl;  
    	return 0;
