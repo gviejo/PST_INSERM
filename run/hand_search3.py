@@ -37,8 +37,8 @@ parameters = {
 	'noise':0.1,
 	'length':5,
 
-	'gain':1.1,
-	'threshold':1.0, 
+	'gain': 2.1,
+	'threshold': 2.0, 
 	
 	'sigma':1.0, 
 	'kappa':0.1,
@@ -87,6 +87,7 @@ for i in xrange(6):
 	model.p_sigmoide = np.zeros(int(model.parameters['length'])+1)
 	model.p_ak = np.zeros(int(model.parameters['length'])+1)        	
 	reaction = np.zeros(int(model.parameters['length'])+1)
+	hb_list = np.zeros(int(model.parameters['length'])+1)
 	# META LEARNING
 	model.H_for_meta = np.zeros(int(model.parameters['length'])+1)
 	model.H_finale_for_meta = 0.0
@@ -102,7 +103,7 @@ for i in xrange(6):
 	# reaction[0] = np.log2(0.25)+model.parameters['sigma']*model.Hf
 	# reaction[0] = np.log2(model.nb_inferences+1.0) + H
 	reaction[0] = model.nb_inferences
-			
+	hb_list[0] = model.Hb
 	for j in xrange(model.n_element):            		
 		model.inferenceModule()
 		model.evaluationModule()				
@@ -110,6 +111,7 @@ for i in xrange(6):
 		# reaction[j+1] = model.Hb + model.parameters['sigma']*model.Hf        
 		# reaction[j+1] = np.log2(model.nb_inferences+1.0)
 		reaction[j+1] = model.nb_inferences
+		hb_list[j+1] = model.Hb
 		H = -(model.p_a_final*np.log2(model.p_a_final)).sum()
 		model.H_for_meta[j+1] = H        
 		if model.sari[i,4] == 0:
@@ -125,7 +127,7 @@ for i in xrange(6):
 	model.updateValue(reward_chain[i])	
 	rt[i] = float(np.sum(reaction*np.round(model.p_decision.flatten(),3)))
 	various[i,0] = model.Hf
-	various[i,1] = model.Hb	
+	various[i,1] = np.dot(hb_list, model.p_decision)
 	various[i,2] = model.delta
 	mat[0,i] = model.p_decision
 	mat[1,i] = model.p_retrieval
@@ -177,4 +179,11 @@ plot(various[:,0],'o-', label = 'Hf')
 plot(various[:,1],'o-', label = 'Hb')
 legend()
 
+figure()
+subplot(121)
+plot(model.meta_list[:,0:5,0])
+ylim(0,2)
+subplot(122)
+plot(model.meta_list[:,0:5,1])
+ylim(0,2)
 show()

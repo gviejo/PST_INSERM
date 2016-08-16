@@ -1470,7 +1470,7 @@ class MetaFSelection():
         np.seterr(invalid='ignore')
         # x = 2*self.max_entropy-self.Hb-self.Hf        
         # x = m-self.Hb-self.Hf        
-        x = 2*self.max_entropy + m - self.Hb - self.Hf
+        x = 2*self.max_entropy - self.Hb - self.Hf + 2.0 * m
         self.pA = 1/(1+((self.n_element-self.nb_inferences)**self.parameters['threshold'])*np.exp(-x*self.parameters['gain']))
         # print "n=",self.n_element," i=", self.nb_inferences, " Hb=", self.Hb, " Hf=", self.Hf, " x=", x, " p(A)=",self.pA, "threshold= ", self.parameters['threshold'], "gain = ", self.parameters['gain']
         return np.random.uniform(0,1) > self.pA
