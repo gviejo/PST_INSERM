@@ -22,8 +22,7 @@ class FSelection():
         self.n_action = 4
         self.n_r = 2
         self.bounds = dict({"beta":[0.0, 100.0], # temperature for final decision                            
-                            'alphap':[0.0, 1.0],
-                            'alpham':[0.0, 1.0],
+                            'alpha':[0.0, 1.0],
                             "length":[1, 10],
                             "threshold":[0.0, 20.0], # sigmoide parameter
                             "noise":[0.0, 0.1],
@@ -305,10 +304,11 @@ class FSelection():
         # Updating model free
         r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
         self.delta = float(r)-self.values_mf[self.current_action]            
-        if r == 1:
-            self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alphap']*self.delta                
-        elif r == 0 or r == -1:
-            self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpham']*self.delta                
+        # if r == 1:
+        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alphap']*self.delta                
+        # elif r == 0 or r == -1:
+        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpham']*self.delta                
+        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                        
         index = range(self.n_action)
         index.pop(int(self.current_action))        
         # self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
@@ -340,9 +340,8 @@ class CSelection():
         self.max_entropy = -np.log2(1./self.n_action)
         self.bounds = dict({"length":[1, 10], 
                     "threshold":[0.01, self.max_entropy], 
-                    "noise":[0.0, 0.1],                            
-                    'alphap':[0.0, 1.0],
-                    'alpham':[0.0, 1.0],
+                    "noise":[0.0, 0.1],                                                
+                    'alpha':[0.0, 1.0],
                     "beta":[0.0, 100.0], # QLEARNING
                     "sigma":[0.0, 20.0], 
                     "weight":[0.0, 1.0], 
@@ -581,10 +580,11 @@ class CSelection():
         # Updating model free
         r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                        
         self.delta = float(r)-self.values_mf[self.current_action]        
-        if r == 1:
-            self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alphap']*self.delta                
-        elif r == 0 or r == -1:
-            self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpham']*self.delta                        
+        # if r == 1:
+        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alphap']*self.delta                
+        # elif r == 0 or r == -1:
+        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpham']*self.delta                        
+        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                        
         index = range(self.n_action)
         index.pop(int(self.current_action))        
         self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        
@@ -777,8 +777,8 @@ class QLearning():
         self.n_action = 4
         self.n_r = 2
         self.max_entropy = -np.log2(1./self.n_action)
-        self.bounds = dict({'alphap':[0.0, 1.0],
-                            'alpham':[0.0, 1.0],
+        self.bounds = dict({'alpha':[0.0, 1.0],
+                            # 'alpham':[0.0, 1.0],
                             "beta":[0.0, 100.0], # QLEARNING
                             "sigma":[0.0, 20.0], 
                             "kappa":[0.0, 1.0],
@@ -790,7 +790,7 @@ class QLearning():
         self.N = len(self.sari)        
         self.mean_rt = mean_rt
         self.value = np.zeros(self.N)
-        self.reaction = np.zeros(self.n_action)
+        self.reaction = np.zeros(self.N)
         self.values_mf =  np.zeros(self.n_action)
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
@@ -860,11 +860,12 @@ class QLearning():
         # print self.values_mf[self.current_action]        
         self.delta = float(r)-self.values_mf[self.current_action]        
         # print "delta = ", self.delta
-        if r == 1:
-            self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alphap']*self.delta                
-        elif r == 0 or r == -1:
-            self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpham']*self.delta                
+        # if r == 1:
+        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alphap']*self.delta                
+        # elif r == 0 or r == -1:
+        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpham']*self.delta                
         # print " mf2=" , self.values_mf
+        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
         index = range(self.n_action)
         index.pop(int(self.current_action))        
         self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])
@@ -1358,7 +1359,7 @@ class MetaFSelection():
         self.delta_list = np.zeros((self.N,4))
         self.inference_list = np.zeros((self.N,1))
         self.Hb_list = np.zeros((self.N, self.parameters['length']+1))        
-        self.meta_list = np.zeros((self.N,20,2))
+        self.meta_list = np.zeros((self.N,30,2))
         ############
         for i in xrange(self.N):        
             if self.sari[i][1] != self.problem:                

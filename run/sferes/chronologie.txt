@@ -51,5 +51,8 @@ SFERES10
 	un seul alpha
 	RT = log(N)^sigma + Hfinal
 
-
+SFERES11
+	MetaFSelection
+	x = 2*Hmax - Hb - Hf + 2.0 * Hmeta
+	Hmeta = Hmeta + eta * ( Hfinale - Hmeta)
 

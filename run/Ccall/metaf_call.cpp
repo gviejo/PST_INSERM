@@ -58,7 +58,7 @@ void softmax(double *p, double *v, double b) {
 	// }	
 }
 double sigmoide(double Hb, double Hf, double Hm, double n, double i, double t, double g) {		
-	double x = 2.0 * -log2(0.25) - Hb - Hf + Hm;
+	double x = 2.0 * -log2(0.25) - Hb - Hf + 2.0 * Hm;
 	// std::cout << pow((n-i),t) <<  std::endl;
 	double tmp = 1.0/(1.0+(pow((n-i),t)*exp(-x*g)));
 	// std::cout << " n=" << n << " i=" << i << "Hb = "<< Hb << ", Hf = " << Hf << " x=" << x << " p(A)=" << tmp << " threshold = " << t << " gain = " << g << std::endl;

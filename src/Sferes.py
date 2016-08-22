@@ -64,11 +64,11 @@ class pareto():
                             "mixture":CSelection(),
                             "metaf":MetaFSelection()})
 
-        self.p_order = dict({'fusion':['alphap','alpham','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
-                            'qlearning':['alphap','alpham','beta', 'sigma', 'kappa', 'shift'],
+        self.p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
+                            'qlearning':['alpha','beta', 'sigma', 'kappa', 'shift'],
                             'bayesian':['length','noise','threshold', 'sigma'],
                             'selection':['beta','eta','length','threshold','noise','sigma', 'sigma_rt'],
-                            'mixture':['alphap','alpham', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift'],
+                            'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift'],
                             'metaf':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift', 'eta']})
 
         self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture', 'metaf']
