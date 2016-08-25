@@ -49,9 +49,8 @@ class FSelection():
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
-        for i in xrange(self.N):        
-            if self.sari[i][1] != self.problem:                
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
+        for i in xrange(self.N):                    
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
@@ -162,9 +161,8 @@ class FSelection():
         self.wmean_count = {i:np.zeros(i+3) for i in xrange(1,6)}
         start = 0
         ############
-        for i in xrange(self.N):        
-            if self.sari[i][1] != self.problem:                
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
+        for i in xrange(self.N):                    
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
@@ -377,10 +375,8 @@ class CSelection():
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
         self.w = self.parameters['weight']
-        for i in xrange(self.N):
-        # for i in xrange(9):
-            if self.sari[i][1] != self.problem:
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:
+        for i in xrange(self.N):                    
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
@@ -462,10 +458,16 @@ class CSelection():
         self.wmean_count = {i:np.zeros(i+3) for i in xrange(1,6)}
         start = 0
         ############
-        for i in xrange(self.N):        
-            if self.sari[i][1] != self.problem:
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:
+        
+        nb_problems = 0
+        nb_non_suivi = 0 
+        for i in xrange(self.N):                       
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
+                    nb_problems += 1
+                    if self.sari[i][1] != self.problem:
+                        nb_non_suivi += 1                        
                     # START BLOC
+                    # print "bloc ", i
                     self.problem = self.sari[i][1]
                     self.n_element = 0
                     self.w = self.parameters['weight']
@@ -537,6 +539,9 @@ class CSelection():
         for k in self.wmean_dict.iterkeys():
             self.wmean_dict[k] = self.wmean_dict[k]/self.wmean_count[k]
         ##########################
+        print nb_non_suivi
+        print nb_problems
+        print nb_non_suivi/nb_problems
 
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]
@@ -654,9 +659,7 @@ class BayesianWorkingMemory():
         self.inference_list = np.zeros((self.N,1))
         ############
         for i in xrange(self.N):
-        # for i in xrange(709):            
-            if self.sari[i][1] != self.problem:
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
@@ -716,9 +719,7 @@ class BayesianWorkingMemory():
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
         for i in xrange(self.N):
-        # for i in xrange(709):            
-            if self.sari[i][1] != self.problem:
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
@@ -822,8 +823,7 @@ class QLearning():
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
         for i in xrange(self.N):
-            if self.sari[i][1] != self.problem:
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
                     # START BLOC
                     self.problem = self.sari[i][1]                    
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
@@ -934,9 +934,8 @@ class HFSelection():
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
         self.last_action = 0               
-        for i in xrange(self.N):        
-            if self.sari[i][1] != self.problem:                
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
+        for i in xrange(self.N):                    
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
@@ -1039,8 +1038,7 @@ class HFSelection():
         self.Hb_list = np.zeros((self.N, self.parameters['length']+1))
         ############
         for i in xrange(self.N):        
-            if self.sari[i][1] != self.problem:                
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0                    
@@ -1246,8 +1244,7 @@ class MetaFSelection():
         search_pos = 0
         repeat_pos = 0
         for i in xrange(self.N):        
-            if self.sari[i][1] != self.problem:                
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
@@ -1386,8 +1383,7 @@ class MetaFSelection():
         start = 0        
         ############
         for i in xrange(self.N):        
-            if self.sari[i][1] != self.problem:                
-                if self.sari[i][4]-self.sari[i-1][4] < 0.0:                    
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0

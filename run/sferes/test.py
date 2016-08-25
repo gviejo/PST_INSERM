@@ -10,28 +10,38 @@ from Models import *
 from Sferes import pareto
 import cPickle as pickle
 
-with open("SFERES_7_best_parameters.pickle", 'rb') as f:
+with open("SFERES_11_best_parameters.pickle", 'rb') as f:
 	data = pickle.load(f)
 
 
 front = pareto()
-parameters = data['distance']['s']['mixture']
+parameters = data['owa']['m']['metaf']
 
-parameters = {'alpha': 0.0016056099999999999,
- 'beta': 13.8203,
- 'eta': 0.992838,
- 'gain': 0.37666199962334801,
- 'gamma': 92.144000000000005,
- 'kappa': 0.080751299999999998,
- 'length': 2.0349550000000001,
- 'noise': 0.050000000000000003,
- 'shift': 0.87298500000000001,
- 'sigma': 19.077280000000002,
- 'threshold': 4.8594200000000001}
 
 model = MetaFSelection()
-model.analysis_call(front.monkeys['m'], front.rt_reg_monkeys['m'], parameters)
+model.analysis_call(front.monkeys['r'], front.rt_reg_monkeys['r'], parameters)
 # print fit[0], fit[1]
+
+
+figure(figsize = (15,7))
+rcParams['ytick.labelsize'] = 8
+rcParams['xtick.labelsize'] = 8
+
+t = 0
+for i in xrange(1,10,2):
+	for j in xrange(2):
+		subplot(5,2,i+j)
+		plot(model.meta_list[:,t,j])
+		ylim(0,2)
+		if j == 0:
+			ylabel("Search "+str(t+1))
+		elif j == 1:
+			ylabel("Repeat "+str(t+1))
+		xlabel("Trial")
+	t+=1
+	
+savefig("SFERES_11_HMETA_owa_singe_m.pdf")
+
 
 
 

@@ -239,7 +239,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	////////////////////////////////
 	for (int i=0;i<nb_trials;i++) 	
 	{						
-		if (sari[i][1] != problem) {
+		// if (sari[i][1] != problem) {
 			if (sari[i][4]-sari[i-1][4] < 0.0) {
 				// START BLOC //
 				problem = sari[i][1];
@@ -269,7 +269,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 				search_pos = 0;
 				repeat_pos = 0;
 			}
-		}
+		// }
 		// START TRIAL //
 		// COMPUTE VALUE		
 		a = sari[i][2]-1;		
