@@ -17,9 +17,21 @@ with open("SFERES_7_best_parameters.pickle", 'rb') as f:
 front = pareto()
 parameters = data['distance']['s']['mixture']
 
-model = CSelection()
-fit = model.sferes_call(front.monkeys['s'], front.rt_reg_monkeys['s'], parameters)
-print fit[0], fit[1]
+parameters = {'alpha': 0.0016056099999999999,
+ 'beta': 13.8203,
+ 'eta': 0.992838,
+ 'gain': 0.37666199962334801,
+ 'gamma': 92.144000000000005,
+ 'kappa': 0.080751299999999998,
+ 'length': 2.0349550000000001,
+ 'noise': 0.050000000000000003,
+ 'shift': 0.87298500000000001,
+ 'sigma': 19.077280000000002,
+ 'threshold': 4.8594200000000001}
+
+model = MetaFSelection()
+model.analysis_call(front.monkeys['m'], front.rt_reg_monkeys['m'], parameters)
+# print fit[0], fit[1]
 
 
 

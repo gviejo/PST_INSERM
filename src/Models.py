@@ -12,10 +12,8 @@ def SoftMaxValues(values, beta):
     tmp = np.exp(values*float(beta))
     return  tmp/float(np.sum(tmp))
 
-
 class FSelection():
     """ fusion strategy
-
     """
     def __init__(self):
         #Parameters
@@ -57,15 +55,14 @@ class FSelection():
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
-                    # # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    # self.values_mf = np.zeros(4)
-                    # self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-                    # # shift bias
-                    # tmp = self.values_mf[self.current_action]
-                    # self.values_mf *= self.parameters['shift']/3.
-                    # self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-                    # # spatial biaises update
-                    # self.spatial_biases[self.sari[i,2]-1] += 1.0
+                    # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
+                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()
+                    # shift bias
+                    tmp = self.values_mf[self.current_action]
+                    self.values_mf *= self.parameters['shift']/3.
+                    self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+                    # spatial biaises update
+                    self.spatial_biases[self.sari[i,2]-1] += 1.0
 
 
             # START TRIAL
@@ -95,8 +92,7 @@ class FSelection():
             self.fusionModule()
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            # reaction[0] = float(H)        
-            reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
+            reaction[0] = float(H)        
             for j in xrange(self.n_element):            
                 self.inferenceModule()
                 self.evaluationModule()
@@ -105,8 +101,7 @@ class FSelection():
                 self.p_ak[j+1] = self.p_a_final[self.current_action]                
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
                 N = self.nb_inferences+1.0
-                # reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
-                reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
+                reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
                 # reaction[j+1] = H
                 self.sigmoideModule()
                 self.p_sigmoide[j+1] = self.pA            
@@ -163,6 +158,9 @@ class FSelection():
         self.delta_list = np.zeros((self.N,4))
         self.inference_list = np.zeros((self.N,1))
         self.Hb_list = np.zeros((self.N, self.parameters['length']+1))
+        self.wmean_dict = {i:np.zeros(i+3) for i in xrange(1,6)}
+        self.wmean_count = {i:np.zeros(i+3) for i in xrange(1,6)}
+        start = 0
         ############
         for i in xrange(self.N):        
             if self.sari[i][1] != self.problem:                
@@ -178,7 +176,19 @@ class FSelection():
                     self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
                     # spatial biaises update
                     self.spatial_biases[self.sari[i,2]-1] += 1.0
-
+                    #######################
+                    nb_search = np.sum(self.sari[start:i-1,4] == 0)
+                    nb_repeat = np.sum(self.sari[start:i-1,4] == 1)
+                    if nb_repeat >= 3 and nb_search <= 5:
+                        w = (self.max_entropy - self.entropy_list[start:start+nb_search+3,0])/(2.0*self.max_entropy - self.entropy_list[start:start+nb_search+3,0] - self.entropy_list[start:start+nb_search+3,1])
+                        self.wmean_dict[nb_search] += w
+                        self.wmean_count[nb_search] += 1.0
+                    elif nb_repeat < 3 and nb_search <= 5:
+                        w = (self.max_entropy - self.entropy_list[start:start+nb_search+nb_repeat,0])/(2.0*self.max_entropy - self.entropy_list[start:start+nb_search+nb_repeat,0] - self.entropy_list[start:start+nb_search+nb_repeat,1])
+                        self.wmean_dict[nb_search][0:nb_search+nb_repeat] += w
+                        self.wmean_count[nb_search][0:nb_search+nb_repeat] += 1.0
+                    start = i
+                    #######################
 
             # START TRIAL
             self.current_action = self.sari[i][2]-1
@@ -198,7 +208,7 @@ class FSelection():
             q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
             reaction = np.zeros(int(self.parameters['length'])+1)
             # START            
-            self.sigmoideModule(2)
+            self.sigmoideModule()
             self.p_sigmoide[0] = self.pA
             self.p_decision[0] = self.pA
             self.p_retrieval[0] = 1.0-self.pA
@@ -207,8 +217,8 @@ class FSelection():
             self.fusionModule()
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            # reaction[0] = float(H)        
-            reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
+            reaction[0] = float(H)        
+            # reaction[0] = np.log2(0.25)+self.parameters['sigma']*self.Hf
             self.Hb_list[i,0] = self.Hb
             for j in xrange(self.n_element):            
                 self.inferenceModule()
@@ -219,10 +229,10 @@ class FSelection():
                 self.p_ak[j+1] = self.p_a_final[self.current_action]                
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
                 N = self.nb_inferences+1.0
-                # reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
-                reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
+                reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
+                # reaction[j+1] = self.Hb + self.parameters['sigma']*self.Hf
                 # reaction[j+1] = H
-                self.sigmoideModule(2)
+                self.sigmoideModule()
                 self.p_sigmoide[j+1] = self.pA            
                 self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
                 self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
@@ -257,6 +267,12 @@ class FSelection():
         for i in xrange(len(self.rt_model)):
             self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
 
+        ##########################
+        for k in self.wmean_dict.iterkeys():
+            self.wmean_dict[k] = self.wmean_dict[k]/self.wmean_count[k]
+        ##########################
+
+
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]
         return np.sum(np.array(tmp) < np.random.rand())-1
@@ -274,10 +290,9 @@ class FSelection():
         p_a_mb = self.p_a_mb/np.sum(self.p_a_mb)
         self.Hb = -np.sum(p_a_mb*np.log2(p_a_mb))
 
-    def sigmoideModule(self, m = 2.0):
+    def sigmoideModule(self):
         np.seterr(invalid='ignore')
-        # x = 2*self.max_entropy-self.Hb-self.Hf
-        x = m - self.Hb - self.Hf
+        x = 2*self.max_entropy-self.Hb-self.Hf
         self.pA = 1/(1+((self.n_element-self.nb_inferences)**self.parameters['threshold'])*np.exp(-x*self.parameters['gain']))
         # print "n=",self.n_element," i=", self.nb_inferences, " Hb=", self.Hb, " Hf=", self.Hf, " x=", x, " p(A)=",self.pA, "threshold= ", self.parameters['threshold'], "gain = ", self.parameters['gain']
         return np.random.uniform(0,1) > self.pA
@@ -301,19 +316,7 @@ class FSelection():
             self.p_a_final = self.p_a_final/self.p_a_final.sum()        
 
     def updateValue(self, reward):
-        # Updating model free
-        r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
-        self.delta = float(r)-self.values_mf[self.current_action]            
-        # if r == 1:
-        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alphap']*self.delta                
-        # elif r == 0 or r == -1:
-        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpham']*self.delta                
-        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                        
-        index = range(self.n_action)
-        index.pop(int(self.current_action))        
-        # self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
-        # Updating model based
-        # if self.delta > -10.0:
+        # print "R = ", reward
         r = int((reward==1)*1)        
         if self.parameters['noise']:
             self.p_a = self.p_a*(1-self.parameters['noise'])+self.parameters['noise']*(1.0/self.n_action*np.ones(self.p_a.shape))
@@ -330,6 +333,14 @@ class FSelection():
         self.p_a[0, self.current_action] = 1.0
         self.p_r_a[0, self.current_action] = 0.0
         self.p_r_a[0, self.current_action, int(r)] = 1.0        
+        # Updating model free
+        r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
+        self.delta = float(r)-self.values_mf[self.current_action]        
+        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
+        index = range(self.n_action)
+        index.pop(int(self.current_action))        
+        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
+        
 
 class CSelection():
     """ mixture strategy
@@ -403,8 +414,8 @@ class CSelection():
             self.value[i] = float(np.log(self.p_a_final[self.current_action])) 
             # print self.value[i]
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-            self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf            
+            self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            # self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf            
             
             self.updateValue(r)
 
@@ -447,6 +458,9 @@ class CSelection():
         self.biais_list = np.zeros((self.N,4))
         self.delta_list = np.zeros((self.N,4))
         self.inference_list = np.zeros((self.N,1))
+        self.wmean_dict = {i:np.zeros(i+3) for i in xrange(1,6)}
+        self.wmean_count = {i:np.zeros(i+3) for i in xrange(1,6)}
+        start = 0
         ############
         for i in xrange(self.N):        
             if self.sari[i][1] != self.problem:
@@ -463,6 +477,17 @@ class CSelection():
                     self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
                     # spatial biaises update
                     self.spatial_biases[self.sari[i,2]-1] += 1.0
+                    #######################
+                    nb_search = np.sum(self.sari[start:i-1,4] == 0)
+                    nb_repeat = np.sum(self.sari[start:i-1,4] == 1)
+                    if nb_repeat >= 3 and nb_search <= 5:
+                        self.wmean_dict[nb_search] += self.w_list[start:start+nb_search+3]
+                        self.wmean_count[nb_search] += 1.0
+                    elif nb_repeat < 3 and nb_search <= 5:
+                        self.wmean_dict[nb_search][0:nb_search+nb_repeat] += self.w_list[start:start+nb_search+nb_repeat]
+                        self.wmean_count[nb_search][0:nb_search+nb_repeat] += 1.0
+                    start = i
+                    #######################
 
             # START TRIAL
             self.current_action = self.sari[i][2]-1            
@@ -494,8 +519,8 @@ class CSelection():
             self.value[i] = float(np.log(self.p_a_final[self.current_action])) 
             # print self.value[i]
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-            self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf
+            self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            # self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf
             # print self.reaction[i]
             self.updateValue(r)
             
@@ -508,7 +533,10 @@ class CSelection():
         for i in xrange(len(self.rt_model)):
             self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
         
-
+        ##########################
+        for k in self.wmean_dict.iterkeys():
+            self.wmean_dict[k] = self.wmean_dict[k]/self.wmean_count[k]
+        ##########################
 
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]
@@ -769,20 +797,18 @@ class BayesianWorkingMemory():
         self.p_r_a[0, self.current_action] = 0.0
         self.p_r_a[0, self.current_action, int(r)] = 1.0        
 
-
 class QLearning():
-    """ mixture strategy
+    """ 
     """
     def __init__(self):
         self.n_action = 4
         self.n_r = 2
         self.max_entropy = -np.log2(1./self.n_action)
         self.bounds = dict({'alpha':[0.0, 1.0],
-                            # 'alpham':[0.0, 1.0],
-                            "beta":[0.0, 100.0], # QLEARNING
-                            "sigma":[0.0, 20.0], 
-                            "kappa":[0.0, 1.0],
-                            "shift":[0.0, 1.0]})
+                    "beta":[0.0, 100.0], # QLEARNING
+                    "sigma":[0.0, 20.0], 
+                    "kappa":[0.0, 1.0],
+                    "shift":[0.0, 1.0]})
 
     def sferes_call(self, sari, mean_rt, parameters):        
         self.parameters = parameters
@@ -829,8 +855,7 @@ class QLearning():
             self.value[i] = float(np.log(self.p_a_mf[self.current_action])) 
             # print self.value[i]
             H = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
-            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-            self.reaction[i] = self.parameters['sigma']*H
+            self.reaction[i] = H
             # print self.reaction[i]
             self.updateValue(r)
 
@@ -860,12 +885,8 @@ class QLearning():
         # print self.values_mf[self.current_action]        
         self.delta = float(r)-self.values_mf[self.current_action]        
         # print "delta = ", self.delta
-        # if r == 1:
-        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alphap']*self.delta                
-        # elif r == 0 or r == -1:
-        #     self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpham']*self.delta                
+        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta        
         # print " mf2=" , self.values_mf
-        self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
         index = range(self.n_action)
         index.pop(int(self.current_action))        
         self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])
@@ -1360,6 +1381,9 @@ class MetaFSelection():
         self.inference_list = np.zeros((self.N,1))
         self.Hb_list = np.zeros((self.N, self.parameters['length']+1))        
         self.meta_list = np.zeros((self.N,30,2))
+        self.wmean_dict = {i:np.zeros(i+3) for i in xrange(1,6)}
+        self.wmean_count = {i:np.zeros(i+3) for i in xrange(1,6)}
+        start = 0        
         ############
         for i in xrange(self.N):        
             if self.sari[i][1] != self.problem:                
@@ -1376,7 +1400,20 @@ class MetaFSelection():
                     # spatial biaises update
                     self.spatial_biases[self.sari[i,2]-1] += 1.0
                     search_pos = 0
-                    repeat_pos = 0            
+                    repeat_pos = 0      
+                    #######################
+                    nb_search = np.sum(self.sari[start:i-1,4] == 0)
+                    nb_repeat = np.sum(self.sari[start:i-1,4] == 1)
+                    if nb_repeat >= 3 and nb_search <= 5:
+                        w = (self.max_entropy - self.entropy_list[start:start+nb_search+3,1])/(2.0*self.max_entropy - self.entropy_list[start:start+nb_search+3,0] - self.entropy_list[start:start+nb_search+3,1])
+                        self.wmean_dict[nb_search][:] += 1.0 - w                        
+                        self.wmean_count[nb_search][:] += 1.0
+                    elif nb_repeat < 3 and nb_search <= 5:
+                        w = (self.max_entropy - self.entropy_list[start:start+nb_search+nb_repeat,1])/(2.0*self.max_entropy - self.entropy_list[start:start+nb_search+nb_repeat,0] - self.entropy_list[start:start+nb_search+nb_repeat,1])
+                        self.wmean_dict[nb_search][0:nb_search+nb_repeat] += 1.0 - w
+                        self.wmean_count[nb_search][0:nb_search+nb_repeat] += 1.0
+                    start = i
+                    #######################                          
 
             # START TRIAL
             self.current_action = self.sari[i][2]-1
@@ -1477,6 +1514,13 @@ class MetaFSelection():
         for i in xrange(len(self.rt_model)):
             self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
 
+        ##########################
+        for k in self.wmean_dict.iterkeys():
+            tmp = self.wmean_dict[k]/self.wmean_count[k]            
+            tmp[np.isnan(tmp)] = 0.0
+            self.wmean_dict[k] = tmp            
+        ##########################
+
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]
         return np.sum(np.array(tmp) < np.random.rand())-1
@@ -1496,7 +1540,7 @@ class MetaFSelection():
 
     def sigmoideModule(self, m = 2.0):
         np.seterr(invalid='ignore')
-        x = 2*self.max_entropy-self.Hb-self.Hf +self.Hmeta       
+        x = 2*self.max_entropy-self.Hb-self.Hf + 2.0 * self.Hmeta       
         # x = m-self.Hb-self.Hf        
         # x = 2*self.max_entropy - self.Hb - self.Hf + m
         self.pA = 1/(1+((self.n_element-self.nb_inferences)**self.parameters['threshold'])*np.exp(-x*self.parameters['gain']))

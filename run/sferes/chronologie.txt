@@ -56,3 +56,10 @@ SFERES11
 	x = 2*Hmax - Hb - Hf + 2.0 * Hmeta
 	Hmeta = Hmeta + eta * ( Hfinale - Hmeta)
 
+SFERES12
+	MetaFSELEction
+	2Hmeta
+	reset de Q-Learning
+	pas de spatial bias
+	pas de shift
+	forgetting

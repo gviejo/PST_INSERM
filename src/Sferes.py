@@ -72,7 +72,12 @@ class pareto():
                             'metaf':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift', 'eta']})
 
         self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture', 'metaf']
-        self.colors_m = dict({'fusion':'r', 'bayesian':'g', 'qlearning':'grey', 'selection':'b', 'mixture':'y', 'metaf':'k'})
+        self.colors_m = dict({  'fusion'    :   'r', 
+                                'bayesian'  :   'g', 
+                                'qlearning' :   'grey', 
+                                'selection' :   'b', 
+                                'mixture'   :   'y', 
+                                'metaf'     :   'indigo'})
         self.markers_type = dict({'distance':'*', 'owa': '^', 'tche': 'o'})
         self.data = dict()
         self.opt = dict()
@@ -371,6 +376,7 @@ class pareto():
                     self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
                     self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]
                     self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]
+                    self.hidden[o][s][m]['wmean'] = model.wmean_dict
                 elif m == 'mixture':
                     self.hidden[o][s][m]['sari'] = model.sari[t_start:t_stop]
                     self.hidden[o][s][m]['entropy'] = model.entropy_list[t_start:t_stop]
@@ -378,12 +384,14 @@ class pareto():
                     self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]                    
                     self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]                    
                     self.hidden[o][s][m]['w'] = model.w_list[t_start:t_stop]
+                    self.hidden[o][s][m]['wmean'] = model.wmean_dict
                 elif m == 'metaf':
                     self.hidden[o][s][m]['sari'] = model.sari[t_start:t_stop]
                     self.hidden[o][s][m]['entropy'] = model.entropy_list[t_start:t_stop]
                     self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
                     self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]
                     self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]
+                    self.hidden[o][s][m]['wmean'] = model.wmean_dict
 
                 # for mb_role plot
                 self.mb_role[s][o[0:3]+" "+m] = model.inference_list.flatten()
@@ -482,40 +490,35 @@ class pareto():
                     f.write("\n")
 
     def writePlot(self, name):
-        rcParams['ytick.labelsize'] = 10
-        rcParams['xtick.labelsize'] = 10        
+        rcParams['ytick.labelsize'] = 8
+        rcParams['xtick.labelsize'] = 8
         #################################################################################################
-        fig_1 = figure(figsize = (10,5)) # for each model all subject            
+        fig_1 = figure(figsize = (13,6)) # for each model all subject            
         i = 1
         # subjects = self.pareto['fusion'].keys()        
         subjects = set.intersection(*map(set, [self.pareto[m].keys() for m in self.pareto.keys()]))
         m_order = []
         for s in subjects:
-            ax = fig_1.add_subplot(2,3,i)
+            ax = fig_1.add_subplot(2,5,i)
             for m in self.pareto.keys():
                 m_order.append(m)
                 if s in self.pareto[m].keys():
                     ax.plot(self.pareto[m][s][:,3], self.pareto[m][s][:,4], 'o-', color = self.colors_m[m])
             ax.set_title(s)
             ax.grid()
-            if i == 1 or i == 4:
-                ax.set_ylabel("fit to RT")
-            if i == 3 or i == 4 or i == 5:
-                ax.set_xlabel("fit to choice")
+            if i == 1:
+                ax.set_ylabel("fit to RT")            
+                # ax.set_xlabel("fit to choice")
             ax.set_xlim(0,1)
             ax.set_ylim(0,1)
+            ax.locator_params(nbins = 5)
             i+=1
 
         line2 = tuple([Line2D(range(1),range(1),marker='o', markersize = 2, markeredgecolor = self.colors_m[m], alpha=1.0,color=self.colors_m[m], linewidth = 2) for m in self.pareto.keys()])
-        figlegend(line2,tuple(m_order), loc = 'lower right', bbox_to_anchor = (0.92, 0.18), fontsize = 10)
-
-        fig_1.savefig(name+"_pareto_front.pdf")
-        #################################################################################################                
-        fig_2 = figure(figsize = (10, 5)) 
-        i = 1
+        figlegend(line2,tuple(m_order), loc = 'lower right', bbox_to_anchor = (0.98, 0.50), fontsize = 10)
         subjects = self.mixed.keys()
         for s in subjects:
-            ax = fig_2.add_subplot(2,3,i)
+            ax = fig_1.add_subplot(2,5,i)
             ax.plot(self.mixed[s][:,4], self.mixed[s][:,5], '-', color = 'grey')
             for m in np.unique(self.mixed[s][:,0]):
                 ind = self.mixed[s][:,0] == m
@@ -525,26 +528,27 @@ class pareto():
             ax.plot(self.zoom[s][np.argmin(self.zoom[s][:,4]),0], self.zoom[s][np.argmin(self.zoom[s][:,4]),1], 'o', markersize = 10)            
             ax.set_title(s)    
             ax.grid()
-            if i == 1 or i == 4:
+            if i == 6: #or i == 4:
                 ax.set_ylabel("fit to RT")
-            if i == 3 or i == 4 or i == 5:
-                ax.set_xlabel("fit to choice")
+            # if i == 3 or i == 4 or i == 5:
+            ax.set_xlabel("fit to choice")
+            ax.locator_params(nbins = 5)
             # ax.set_xlim(0,1)
             # ax.set_ylim(0,1)
             i+=1 
 
-        line2 = tuple([Line2D(range(1),range(1),marker='o', markersize = 2, markeredgecolor = self.colors_m[m], alpha=1.0,color=self.colors_m[m], linewidth = 2) for m in self.pareto.keys()])
-        figlegend(line2,tuple(m_order), loc = 'lower right', bbox_to_anchor = (0.92, 0.18), fontsize = 10)
-
-        fig_2.savefig(name+"_mixed_pareto_front.pdf")
+        # line2 = tuple([Line2D(range(1),range(1),marker='o', markersize = 2, markeredgecolor = self.colors_m[m], alpha=1.0,color=self.colors_m[m], linewidth = 2) for m in self.pareto.keys()])
+        # figlegend(line2,tuple(m_order), loc = 'lower right', bbox_to_anchor = (0.92, 0.18), fontsize = 10)
+        fig_1.savefig(name+"_pareto_front.pdf")
+        # fig_2.savefig(name+"_mixed_pareto_front.pdf")
         #################################################################################################
-        fig_3 = figure(figsize = (10, 5))
+        fig_2 = figure(figsize = (10, 5))
         subplots_adjust(wspace = 0.3, left = 0.1, right = 0.9)
 
         i = 1        
         for s in subjects:
             for n in xrange(1, 6):            
-                ax = fig_3.add_subplot(5,5,i)
+                ax = fig_2.add_subplot(5,5,i)
                 for o in self.beh.keys():                    
                     m = self.beh[o][s].keys()[0]
                     index = np.where(self.rt_reg_monkeys[s][:,0] == n)[0]
@@ -559,23 +563,24 @@ class pareto():
                 if i in [1,6,11,16,21]:
                     ax.set_ylabel(s)
                 if i >= 21:
-                    # ax.set_xticks(np.arange(1,len(index)+1, 2))
-                    ax.set_xlabel(str(int(self.rt_reg_monkeys[s][index[0],0]))+" search | 7 repeat", fontsize = 7)
-
+                    ax.set_xticks(np.arange(0,len(index), 1))
+                    ax.set_xlabel(str(int(self.rt_reg_monkeys[s][index[0],0]))+" search | 3 repeat", fontsize = 7)
+                # ax.set_yticks([])
                 i+=1
 
-        fig_3.savefig(name+"_evaluation_sferes_call_mid.pdf")
+        fig_2.savefig(name+"_evaluation_sferes_call_mid.pdf")
 
-        fig_3_bis = figure(figsize = (10, 5))
+        fig_2_bis = figure(figsize = (10, 5))
         subplots_adjust(wspace = 0.3, left = 0.1, right = 0.9)
 
         i = 1        
         for s in subjects:
             for n in xrange(1, 6):            
-                ax = fig_3_bis.add_subplot(5,5,i)
-                for m in self.beh_rt_extremum[s].keys():                                        
-                    index = np.where(self.rt_reg_monkeys[s][:,0] == n)[0]
-                    ax.plot(self.beh_rt_extremum[s][m][index], 'o-', color = self.colors_m[m], label = m)
+                ax = fig_2_bis.add_subplot(5,5,i)
+                for m in self.beh_rt_extremum[s].keys():
+                    if m != 'qlearning':                                        
+                        index = np.where(self.rt_reg_monkeys[s][:,0] == n)[0]
+                        ax.plot(self.beh_rt_extremum[s][m][index], 'o-', color = self.colors_m[m], label = m)
 
                 ax.plot(self.rt_reg_monkeys[s][index,1], '-', color = 'black')
                 ax.fill_between(np.arange(len(index)), self.rt_reg_monkeys[s][index,1]+self.rt_reg_monkeys[s][index,2], self.rt_reg_monkeys[s][index,1]-self.rt_reg_monkeys[s][index,2], color = 'black', alpha = 0.4)                
@@ -586,15 +591,52 @@ class pareto():
                 if i in [1,6,11,16,21]:
                     ax.set_ylabel(s)
                 if i >= 21:
-                    # ax.set_xticks(np.arange(1,len(index)+1, 2))
-                    ax.set_xlabel(str(int(self.rt_reg_monkeys[s][index[0],0]))+" search | 7 repeat", fontsize = 7)
-
+                    ax.set_xticks(np.arange(0,len(index), 1))
+                    ax.set_xlabel(str(int(self.rt_reg_monkeys[s][index[0],0]))+" search | 3 repeat", fontsize = 7)
+                ax.set_yticks([])
                 i+=1
 
-        fig_3_bis.savefig(name+"_evaluation_sferes_call_rt_extremum.pdf")
+        fig_2_bis.savefig(name+"_evaluation_sferes_call_rt_extremum.pdf")
         os.system("pdftk "+name+"_evaluation_sferes_call_mid.pdf "+name+"_evaluation_sferes_call_rt_extremum.pdf"+" cat output "+name+"_evaluation_sferes_call.pdf")
         os.system("rm "+name+"_evaluation_sferes_call_rt_extremum.pdf")
         os.system("rm "+name+"_evaluation_sferes_call_mid.pdf")
+
+        #################################################################################################
+        fig_3 = figure(figsize = (10, 5))
+        subplots_adjust(wspace = 0.3, left = 0.1, right = 0.9)
+
+        i = 1        
+        for s in subjects:
+            for n in xrange(1, 6):            
+                ax = fig_3.add_subplot(5,5,i)
+                for o in self.beh.keys():                    
+                    m = self.beh[o][s].keys()[0]                    
+                    if m != 'qlearning' or m != 'bayesian':                    
+                        ax.plot(self.hidden[o][s][m]['wmean'][n], self.markers_type[o]+'-', color = self.colors_m[m], label = o, alpha = 0.6)
+
+                index = np.where(self.rt_reg_monkeys[s][:,0] == n)[0]
+                # ax.fill_between(np.arange(len(index)), self.rt_reg_monkeys[s][index,1]+self.rt_reg_monkeys[s][index,2], self.rt_reg_monkeys[s][index,1]-self.rt_reg_monkeys[s][index,2], color = 'black', alpha = 0.4)                
+                # ax.set_xlim(-1, len(index))
+                ax.axvline(self.rt_reg_monkeys[s][index[0],0]-0.5,  color = 'grey', alpha = 0.5)
+                ax.set_ylim(0,1)
+                ax.set_xlim(-1, len(index))
+                ax.text(0.5,0.05,  "QL", alpha = 0.6)
+                ax.text(0.5,0.8 ,  "WM", alpha = 0.6)
+                if i < 21:
+                    ax.set_xticks([])
+                if i in [1,6,11,16,21]:
+                    ax.set_ylabel(s)
+                    ax.set_yticks([0,0.5,1])
+                else:
+                    ax.set_yticks([])
+                if i >= 21:
+                    ax.set_xticks(np.arange(0,len(index), 1))
+                    ax.set_xlabel(str(int(self.rt_reg_monkeys[s][index[0],0]))+" search | 3 repeat", fontsize = 7)
+                
+                i+=1
+
+        fig_3.savefig(name+"_contribution.pdf")
+
         #################################################################################################
         rcParams['ytick.labelsize'] = 12
         rcParams['xtick.labelsize'] = 12        
