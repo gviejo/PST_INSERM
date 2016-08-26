@@ -131,12 +131,12 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 	for (int i=0;i<N;i++) 	
 	// for (int i=0;i<709;i++) 	
 	{				
-		if (sari[i][1] != problem) {
-			if (sari[i][4]-sari[i-1][4] < 0.0) {
+		// if (sari[i][1] != problem) {
+		if (sari[i][4]-sari[i-1][4] < 0.0) {
 				// START BLOC //
 				problem = sari[i][1];
 				n_element = 0;			
-			}
+			// }
 		}
 		// START TRIAL //		
 		// COMPUTE VALUE
@@ -205,8 +205,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double length_
 		// if (isnan(H)) H = 0.005;
 		values[i] = log(p_a_mb[a]);			
 		// std::cout << values[i] << std::endl;
-		// rt[i] =  pow(log2(N), sigma)+H;
-		rt[i] = sigma * H;
+		rt[i] =  pow(log2(N), sigma)+H;
 
 		// UPDATE MEMORY 						
 		for (int k=length-1;k>0;k--) {						

@@ -135,13 +135,12 @@ double sum_prod(double *a, double *b, int n) {
 	return tmp;
 }
 // void sferes_call(double * fit, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_)
-void sferes_call(double * fit, const int N, const char* data_dir, double alphap_, double alpham_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_, double sigma_, double kappa_, double shift_)
+void sferes_call(double * fit, const int N, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_, double sigma_, double kappa_, double shift_)
 {
 
 	///////////////////
 	// parameters
-	double alphap=0.0+alphap_*(1.0-0.0);
-	double alpham=0.0+alpham_*(1.0-0.0);
+	double alpha=0.0+alpha_*(1.0-0.0);
 	double beta=0.0+beta_*(100.0-0.0);
 	double noise=0.0+noise_*(0.1-0.0);
 	int length=1+(10-1)*length_;
@@ -244,36 +243,36 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alphap_
 	for (int i=0;i<nb_trials;i++) 
 	// for (int i=0;i<21;i++) 
 	{						
-		if (sari[i][1] != problem) {
+		// if (sari[i][1] != problem) {
 			if (sari[i][4]-sari[i-1][4] < 0.0) {
 				// START BLOC //
 				problem = sari[i][1];
 				n_element = 0;
 				
-				// // RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-				// double summ = 0.0;
-				// for (int m=0;m<n_action;m++) { // normalise spatial bias
-				// 	summ+=spatial_biases[m];
-				// }
+				// RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
+				double summ = 0.0;
+				for (int m=0;m<n_action;m++) { // normalise spatial bias
+					summ+=spatial_biases[m];
+				}
 				
-				// for (int m=0;m<n_action;m++) {					
-				// 	values_mf[m] = spatial_biases[m]/summ;					
-				// 	// std::cout << spatial_biases[m] << " " ;
-				// }
-				// // std::cout << std::endl;
-				// // shift bias
-				// for (int m=0;m<n_action;m++) {
-				// 	if (m == sari[i-1][2]-1) {
-				// 		values_mf[m] *= (1.0-shift);		
-				// 	} else {
-				// 		values_mf[m] *= (shift/3.);
-				// 	}
-				// }				
+				for (int m=0;m<n_action;m++) {					
+					values_mf[m] = spatial_biases[m]/summ;					
+					// std::cout << spatial_biases[m] << " " ;
+				}
+				// std::cout << std::endl;
+				// shift bias
+				for (int m=0;m<n_action;m++) {
+					if (m == sari[i-1][2]-1) {
+						values_mf[m] *= (1.0-shift);		
+					} else {
+						values_mf[m] *= (shift/3.);
+					}
+				}				
 
-				// // spatial biases update
-				// spatial_biases[sari[i][2]-1] += 1.0;
+				// spatial biases update
+				spatial_biases[sari[i][2]-1] += 1.0;
 			}
-		}
+		// }
 		// START TRIAL //
 		// COMPUTE VALUE		
 		a = sari[i][2]-1;
@@ -311,11 +310,11 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alphap_
 		p_retrieval[0] = 1.0-p_decision[0];
 		
 		fusion(p_a_final, values_mb, values_mf, beta);
-		
+		// std::cout << "fusion " << values_mf[a] << " " << values_mb[a] <<  std::endl;
 		p_ak[0] = p_a_final[a];
-		// reaction[0] = entropy(p_a_final);
-		reaction[0] = log2(1./n_action) + sigma*Hf;
-
+		reaction[0] = entropy(p_a_final);
+		// std::cout << 0 << " p_ak=" << p_ak[0] << " p_decision=" << p_decision[0] << " p_retrieval=" << p_retrieval[0] << std::endl;
+		// std::cout << " N element =" << n_element << std::endl;
 		for (int k=0;k<n_element;k++) {
 			// INFERENCE				
 			double sum = 0.0;
@@ -357,11 +356,10 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alphap_
 			Hb = entropy(p_a_mb);
 			// FUSION
 			fusion(p_a_final, values_mb, values_mf, beta);
-			
+			// std::cout << "fusion " << values_mf[a] << " " << values_mb[a] <<  std::endl;
 			p_ak[k+1] = p_a_final[a];
 			double N = k+2.0;
-			// reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
-			reaction[k+1] = Hb + sigma * Hf;
+			reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
 		
 			// SIGMOIDE
 			double pA = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);				
@@ -370,15 +368,19 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alphap_
 			p_decision[k+1] = pA*p_retrieval[k];
 			p_retrieval[k+1] = (1.0-pA)*p_retrieval[k];
 
+			// std::cout << k+1 << " p_ak=" << p_ak[k+1] << " p_decision=" << p_decision[k+1] << "p_retrieval=" << p_retrieval[k+1] << std::endl;
 		}		
 
+		// std::cout << sum_prod(p_ak, p_decision, n_element+1) << std::endl;
 
 		values[i] = log(sum_prod(p_ak, p_decision, n_element+1));
+		// std::cout << values[i] << std::endl;
 
 		double val = sum_prod(p_ak, p_decision, n_element+1);						
 		
 		rt[i] = sum_prod(reaction, p_decision, n_element+1);			
 		
+		// if (isnan(rt[i])) {cout << i << " " << rt[i] << std::endl;}
 		
 		// UPDATE MEMORY 						
 		for (int k=length-1;k>0;k--) {						
@@ -417,23 +419,17 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alphap_
 		// std::cout << values_mf[a] << std::endl;
 		double delta = reward - values_mf[a];
 		// std::cout << "delta =" << delta << std::endl;
-		if (r == 1) {
-			values_mf[a]+=(alphap*delta);	
-		} else if (r == 0) {
-			values_mf[a]+=(alpham*delta);	
-		}
-		
+		values_mf[a]+=(alpha*delta);
 		// std::cout << "mf2 = ";
 		// for (int j=0;j<4;j++) {
 		// 	std::cout << values_mf[j] << " ";
 		// }
 		// std::cout << std::endl;	
-		// FORGETTING 
-		// for (int m=0;m<n_action;m++) {
-		// 	if (m != a) {				
-		// 		values_mf[m] += (1.0-kappa)*(0.0-values_mf[m]);
-		// 	}
-		// }
+		for (int m=0;m<n_action;m++) {
+			if (m != a) {				
+				values_mf[m] += (1.0-kappa)*(0.0-values_mf[m]);
+			}
+		}
 		// std::cout << "mf3 = ";
 		// for (int j=0;j<4;j++) {
 		// 	std::cout << values_mf[j] << " ";
