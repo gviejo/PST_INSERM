@@ -239,7 +239,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	////////////////////////////////
 	for (int i=0;i<nb_trials;i++) 	
 	{						
-		if (sari[i][4]-sari[i-1][4] < 0.0) {
+		if (sari[i][4]-sari[i-1][4] < 0.0 & i > 0)  {
 				// START BLOC //
 				problem = sari[i][1];
 				n_element = 0;
@@ -250,8 +250,8 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 					summ+=spatial_biases[m];
 				}				
 				for (int m=0;m<n_action;m++) {					
-					// values_mf[m] = spatial_biases[m]/summ;										
-					values_mf[m] = 0.0;
+					values_mf[m] = spatial_biases[m]/summ;										
+					// values_mf[m] = 0.0;
 				}				
 				// shift bias
 				for (int m=0;m<n_action;m++) {

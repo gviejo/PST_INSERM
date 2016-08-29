@@ -15,32 +15,41 @@ with open("SFERES_11_best_parameters.pickle", 'rb') as f:
 
 
 front = pareto()
-parameters = data['owa']['m']['metaf']
+
+for o in data.iterkeys():
+	print o
+	parameters = data[o]['m']['metaf']
 
 
-model = MetaFSelection()
-model.analysis_call(front.monkeys['r'], front.rt_reg_monkeys['r'], parameters)
-# print fit[0], fit[1]
 
-
-figure(figsize = (15,7))
-rcParams['ytick.labelsize'] = 8
-rcParams['xtick.labelsize'] = 8
-
-t = 0
-for i in xrange(1,10,2):
-	for j in xrange(2):
-		subplot(5,2,i+j)
-		plot(model.meta_list[:,t,j])
-		ylim(0,2)
-		if j == 0:
-			ylabel("Search "+str(t+1))
-		elif j == 1:
-			ylabel("Repeat "+str(t+1))
-		xlabel("Trial")
-	t+=1
+	model = MetaFSelection()
+	model.analysis_call(front.monkeys['r'], front.rt_reg_monkeys['r'], parameters)
 	
-savefig("SFERES_11_HMETA_owa_singe_m.pdf")
+
+
+
+
+	figure(figsize = (15,7))
+	rcParams['ytick.labelsize'] = 8
+	rcParams['xtick.labelsize'] = 8
+
+	t = 0
+	for i in xrange(1,10,2):
+		for j in xrange(2):
+			subplot(5,2,i+j)
+			plot(model.meta_list[:,t,j])
+			plot(np.convolve(model.meta_list[:,t,j], np.ones(300)/300, mode = 'full'), color = 'black', linewidth = 2)
+			ylim(0,2)
+			if j == 0:
+				ylabel("Search "+str(t+1))
+			elif j == 1:
+				ylabel("Repeat "+str(t+1))
+			xlabel("Trial")
+		t+=1
+	
+
+	savefig("SFERES_11_HMETA_"+o+"_singe_m.pdf")
+
 
 
 
