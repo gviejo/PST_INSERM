@@ -63,3 +63,16 @@ SFERES12
 	pas de spatial bias
 	pas de shift
 	forgetting
+
+SFERES13
+	SFERES 3 + MetaFSelection
+	x = 2*Hmax - hb -hv + 2 * Hmeta
+	eta
+	pour bug filtrage problem
+
+
+SFERES14
+	Hmeta_wm et Hmeta_ql
+	x = 2Hmax - Hb - Hf + Hmeta_wm - Hmeta_ql
+	Init Hmeta au max
+	

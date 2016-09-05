@@ -57,9 +57,8 @@ void softmax(double *p, double *v, double b) {
 	// 	}
 	// }	
 }
-double sigmoide(double Hb, double Hf, double Hm, double n, double i, double t, double g) {		
-	double x = 2.0 * -log2(0.25) - Hb - Hf + 2.0 * Hm;
-	// std::cout << pow((n-i),t) <<  std::endl;
+double sigmoide(double Hb, double Hf, double Hb_meta, double Hf_meta, double n, double i, double t, double g) {		
+	double x = 2.0 * -log2(0.25) - Hb - Hf + Hb_meta - Hf_meta;
 	double tmp = 1.0/(1.0+(pow((n-i),t)*exp(-x*g)));
 	// std::cout << " n=" << n << " i=" << i << "Hb = "<< Hb << ", Hf = " << Hf << " x=" << x << " p(A)=" << tmp << " threshold = " << t << " gain = " << g << std::endl;
 	// std::cout << tmp << std::endl;
@@ -229,12 +228,14 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		spatial_biases[m] = 1./n_action;
 	}	
 	// META LEARNING ///////////////
-	double meta [30][2];
+	double meta [2][30][2];
 	int search_pos = 0;
 	int repeat_pos = 0;
 	for (int i=0;i<30;i++) {
-		meta[i][0] = 0.0;
-		meta[i][1] = 0.0;
+		meta[0][i][0] = max_entropy;
+		meta[0][i][1] = max_entropy;
+		meta[1][i][0] = max_entropy;
+		meta[1][i][1] = max_entropy;		
 	}
 	////////////////////////////////
 	for (int i=0;i<nb_trials;i++) 	
@@ -288,16 +289,21 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		}
 		// COMPUTE Hmeta
 		// Hmeta is constant for one trial
-		double Hmeta = 0.0;
+		double Hmeta_wm = 0;
+		double Hmeta_ql = 0;
 		if (sari[i][4] == 0) {
-			Hmeta = meta[search_pos][0];
+			Hmeta_wm = meta[0][search_pos][0];
+			Hmeta_ql = meta[1][search_pos][0];
 		}
 		else if (sari[i][4] == 1) {
-			Hmeta = meta[repeat_pos][1];
+			Hmeta_wm = meta[0][search_pos][1];
+			Hmeta_ql = meta[1][search_pos][1];
 		}
 		/////////////////////////////
 		// NEED AN EVALUATION OF Hfinal 
 		double H_for_meta [n_element+1];
+		// and an evaluation of Hb_final
+		double Hb_for_meta [n_element+1];
 
 		// WORKING MEMORY
 		int nb_inferences = 0;
@@ -309,11 +315,12 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		double p_a_final [n_action];
 
 		// NULL POSITION
-		p_decision[0] = sigmoide(Hb, Hf, Hmeta, n_element, nb_inferences, threshold, gain);		
+		p_decision[0] = sigmoide(Hb, Hf, Hmeta_wm, Hmeta_ql, n_element, nb_inferences, threshold, gain);		
 		p_retrieval[0] = 1.0-p_decision[0];				
 		fusion(p_a_final, values_mb, values_mf, beta);		
 		p_ak[0] = p_a_final[a];
 		H_for_meta[0] = entropy(p_a_final);
+		Hb_for_meta[0] = Hb;
 		// NULL REACTION TIME		
 		reaction[0] = H_for_meta[0];
 
@@ -363,11 +370,12 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 
 			// H FINAL 
 			H_for_meta[k+1] = entropy(p_a_final);
+			Hb_for_meta[k+1] = Hb;
 			double N = k+2.0;
 			reaction[k+1] = pow(log2(N), sigma) + H_for_meta[k+1];
 		
 			// SIGMOIDE
-			double pA = sigmoide(Hb, Hf, Hmeta, n_element, nb_inferences, threshold, gain);				
+			double pA = sigmoide(Hb, Hf, Hmeta_wm, Hmeta_ql, n_element, nb_inferences, threshold, gain);				
 
 			
 			p_decision[k+1] = pA*p_retrieval[k];
@@ -384,12 +392,20 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		
 		// UPDATING META LEARNING
 		double H_finale = sum_prod(H_for_meta, p_decision, n_element+1);
+		double Hb_finale = sum_prod(Hb_for_meta, p_decision, n_element+1);
+
 		if (sari[i][4] == 0) {
-			meta[search_pos][0] += eta * (H_finale - meta[search_pos][0]);
+			meta[1][search_pos][0] += eta * (Hf - meta[1][search_pos][0]);
+			if (nb_inferences > 0) {
+				meta[0][search_pos][0] += eta * (Hb_finale - meta[0][search_pos][0]);
+			}
 			search_pos += 1;
 		} 
 		else if (sari[i][4] == 1) {
-			meta[repeat_pos][1] += eta * (H_finale - meta[repeat_pos][1]);
+			meta[1][repeat_pos][1] += eta * (Hf - meta[1][repeat_pos][1]);
+			if (nb_inferences > 0) {
+				meta[0][repeat_pos][1] += eta * (Hb_finale - meta[0][repeat_pos][1]);
+			}			
 			repeat_pos += 1;
 		}
 

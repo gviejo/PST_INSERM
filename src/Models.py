@@ -1249,8 +1249,8 @@ class MetaFSelection():
                     self.problem = self.sari[i][1]
                     self.n_element = 0
                     # # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    self.values_mf = np.zeros(4)
-                    # self.values_mf = self.spatial_biases/self.spatial_biases.sum()
+                    # self.values_mf = np.zeros(4)
+                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()
                     # shift bias
                     tmp = self.values_mf[self.current_action]
                     self.values_mf *= self.parameters['shift']/3.
