@@ -5,7 +5,7 @@
 #include <sstream>
 #include <iterator>
 #include <map>
-#include <math.h>
+// #include <math.h>
 // #include "qlearning_call.cpp"
 // #include "bayesian_call.cpp"
 // #include "selection_call.cpp"
@@ -31,14 +31,13 @@ int main () {
 	map_monkeys_length_trial['s'] = 10668;
 
 
-														
 
-	double fit [2] = {0.0, 0.0};
+	float fit [2] = {0.0, 0.0};
 	fit[0] = 0.0 ; fit[1] = 0.0;
 
-	int N =  map_monkeys_length_trial['s'];
+	int N =  map_monkeys_length_trial['p'];
 
-	sferes_call(fit, N, "../../data/data_txt_3_repeat/s", 0, 0.0969144, 0.291051, 0.111525, 1, 0, 0.20948, 0.1, 0.1, 0.1);
+	sferes_call(fit, 2, "../../data/data_txt_3_repeat/p",0.348326,0.863463,0.19552,0.790971,0.0828114,0.164964,0.114382,0.4634,0.62559,0.440426);
 
 	std::cout << fit[0] << " " << fit[1] << std::endl;  
    	return 0;
