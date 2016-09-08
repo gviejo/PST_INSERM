@@ -1116,7 +1116,7 @@ class HFSelection():
             
             print "last action=",self.last_action, " state=", self.state, " action=",self.current_action
             print self.values_hebbian
-            sys.stdin.readline()
+            # sys.stdin.readline()
 
             self.last_action = self.current_action
 
@@ -1635,7 +1635,10 @@ class Sweeping():
                     self.problem = self.sari[i][1]
                     self.n_element = 0
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()
+                    # if case == 'no biais':
+                    #     self.values_mf = np.zeros(4)
+                    # elif case == 'biais':
+                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()                    
                     # shift bias
                     tmp = self.values_mf[self.current_action]
                     self.values_mf *= self.parameters['shift']/3.
@@ -1753,8 +1756,8 @@ class Sweeping():
         self.wmean_count = {i:np.zeros(i+3) for i in xrange(1,6)}
         start = 0
         ############
-        # for i in xrange(self.N):                    
-        for i in xrange(12):                                
+        for i in xrange(self.N):                    
+        # for i in xrange(12):                                
             if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
@@ -1802,7 +1805,7 @@ class Sweeping():
                 self.p = self.uniform[:,:]                
                 self.Hb = self.max_entropy
                 self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        
-                print "REINIT"
+                # print "REINIT"
             # START            
             self.sigmoideModule()
             self.p_sigmoide[0] = self.pA
@@ -1816,7 +1819,7 @@ class Sweeping():
 
             self.Hb_list[0] = self.Hb
 
-            print "i = ", i, " phase = ", self.sari[i][4], " n_element = ", self.n_element, " hf ", self.Hf
+            # print "i = ", i, " phase = ", self.sari[i][4], " n_element = ", self.n_element, " hf ", self.Hf
 
             for j in xrange(self.n_element):            
                 self.inferenceModule()
@@ -1852,11 +1855,11 @@ class Sweeping():
                 self.inference_list[i] = 0            
             ##############
 
-            print "Hb(k) ", self.Hb_list
-            print "sig = ", self.p_sigmoide
-            print "p(D) = ", self.p_decision
-            print "Hb final = ", np.dot(self.p_decision, self.Hb_list)
-            sys.stdin.readline()
+            # print "Hb(k) ", self.Hb_list
+            # print "sig = ", self.p_sigmoide
+            # print "p(D) = ", self.p_decision
+            # print "Hb final = ", np.dot(self.p_decision, self.Hb_list)
+            # sys.stdin.readline()
 
             # print np.dot(self.p_decision,self.p_ak)
             self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
@@ -1867,7 +1870,7 @@ class Sweeping():
             self.updateValue(r)
             # SWEEPING
             if self.sari[i][4] == 0 and r == 0:
-                print "SWEEPING"
+                # print "SWEEPING"
                 self.p = self.uniform[:,:]                
                 self.Hb = self.max_entropy
                 self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        

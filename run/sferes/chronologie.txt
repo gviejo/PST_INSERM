@@ -75,4 +75,27 @@ SFERES14
 	Hmeta_wm et Hmeta_ql
 	x = 2Hmax - Hb - Hf + Hmeta_wm - Hmeta_ql
 	Init Hmeta au max
-	
+
+SFERES15
+	sweeping
+	seulement pour p
+	pas de meta learning
+	juste fusion
+	sweeping pour phase de recherche
+	reset de Q-Learning
+	spatial biais
+	shift
+	forgetting
+	un seul alpha
+
+SFERES 16
+	sweeping a faire pour tout les singes et tout les modeles
+	pas de meta learning
+	sweeping pour phase de recherche
+	reset de Q-Learning
+	pas de spatial biais (montrer a mehdi various/test_sweeping.pdf pour difference sans biais)
+	pas de shift
+	forgetting
+	un seul alpha
+
+

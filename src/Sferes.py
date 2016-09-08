@@ -233,15 +233,15 @@ class pareto():
                     self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - float(len(self.p_order[m]))*np.log(self.N[s])
                     best_bic = 2*self.best_log[s] - float(len(self.p_order[m]))*np.log(self.N[s])
                     worst_bic = 2*worst_log - float(len(self.p_order[m]))*np.log(self.N[s])
-                    worst_bic = np.min(self.pareto[m][s][:,3]) # CAREFUL
+                    # worst_bic = np.min(self.pareto[m][s][:,3]) # CAREFUL
                     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_bic)/(best_bic-worst_bic)
                 elif case == 'aic':
                     self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - 2.0*float(len(self.p_order[m]))
                     best_aic = 2*self.best_log[s] - float(len(self.p_order[m]))*2.0
                     worst_aic = 2*worst_log - float(len(self.p_order[m]))*2.0
                     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_aic)/(best_aic - worst_aic)
-                # self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(2.0*np.power(2.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
-                self.pareto[m][s][:,4] = ((self.pareto[m][s][:,4] - 0.0) / (0.0 - np.min(self.pareto[m][s][:4])))+1.0
+                self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(2.0*np.power(2.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
+                # self.pareto[m][s][:,4] = ((self.pareto[m][s][:,4] - 0.0) / (0.0 - np.min(self.pareto[m][s][:4])))+1.0
                 # # on enleve les points negatifs                
                 self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
 
