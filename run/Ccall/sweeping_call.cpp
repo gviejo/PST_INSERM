@@ -315,7 +315,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 		float p_a_final [n_action];
 
 		// NO SWEEPING
-		if ((sari[i][4] == 1) || (i == 0)) {
+		if ((sari[i][4] == 1) || (i == 0) || (sari[i][4]-sari[i-1][4] < 0.0)) {
 			for (int m=0;m<n_action;m++) {
 				p[m][0] = 1./(n_action*n_r); 
 				p[m][1] = 1./(n_action*n_r); 
@@ -438,7 +438,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			}
 		}
 		// SWEEPING
-		if (sari[i][4] == 0) {
+		if ((sari[i][4] == 0) && (r==0)) {
 			for (int m=0;m<n_action;m++) {
 				p[m][0] = 1./(n_action*n_r); 
 				p[m][1] = 1./(n_action*n_r); 

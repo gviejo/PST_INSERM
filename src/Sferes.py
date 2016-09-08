@@ -62,22 +62,26 @@ class pareto():
                             "bayesian":BayesianWorkingMemory(),
                             # "selection":KSelection(),
                             "mixture":CSelection(),
-                            "metaf":MetaFSelection()})
+                            "metaf":MetaFSelection(),
+                            "sweeping":Sweeping()})
 
         self.p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
                             'qlearning':['alpha','beta', 'sigma', 'kappa', 'shift'],
                             'bayesian':['length','noise','threshold', 'sigma'],
                             'selection':['beta','eta','length','threshold','noise','sigma', 'sigma_rt'],
                             'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift'],
-                            'metaf':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift', 'eta']})
+                            'metaf':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift', 'eta'],
+                            'sweeping':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift']}) 
 
-        self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture', 'metaf']
+
+        self.m_order = ['qlearning', 'bayesian', 'selection', 'fusion', 'mixture', 'metaf', 'sweeping']
         self.colors_m = dict({  'fusion'    :   'r', 
                                 'bayesian'  :   'g', 
                                 'qlearning' :   'grey', 
                                 'selection' :   'b', 
                                 'mixture'   :   'y', 
-                                'metaf'     :   'indigo'})
+                                'metaf'     :   'indigo',
+                                'sweeping'  :   'darkgreen'})
         self.markers_type = dict({'distance':'*', 'owa': '^', 'tche': 'o'})
         self.data = dict()
         self.opt = dict()
@@ -220,6 +224,7 @@ class pareto():
 
                 self.pareto[m][s][:,3] = self.pareto[m][s][:,3] - 50000.0
                 self.pareto[m][s][:,4] = self.pareto[m][s][:,4] - 50000.0
+
                 if case == 'r2':
                     self.pareto[m][s][:,3] = 1.0 - (self.pareto[m][s][:,3]/(self.N[s]*np.log(0.25)))
                 elif case == 'log':
@@ -228,13 +233,15 @@ class pareto():
                     self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - float(len(self.p_order[m]))*np.log(self.N[s])
                     best_bic = 2*self.best_log[s] - float(len(self.p_order[m]))*np.log(self.N[s])
                     worst_bic = 2*worst_log - float(len(self.p_order[m]))*np.log(self.N[s])
+                    worst_bic = np.min(self.pareto[m][s][:,3]) # CAREFUL
                     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_bic)/(best_bic-worst_bic)
                 elif case == 'aic':
                     self.pareto[m][s][:,3] = 2*self.pareto[m][s][:,3] - 2.0*float(len(self.p_order[m]))
                     best_aic = 2*self.best_log[s] - float(len(self.p_order[m]))*2.0
                     worst_aic = 2*worst_log - float(len(self.p_order[m]))*2.0
                     self.pareto[m][s][:,3] = (self.pareto[m][s][:,3]-worst_aic)/(best_aic - worst_aic)
-                self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(np.power(2.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
+                # self.pareto[m][s][:,4] = 1.0 - ((-self.pareto[m][s][:,4])/(2.0*np.power(2.0*self.rt_reg_monkeys[s][:,1], 2).sum()))
+                self.pareto[m][s][:,4] = ((self.pareto[m][s][:,4] - 0.0) / (0.0 - np.min(self.pareto[m][s][:4])))+1.0
                 # # on enleve les points negatifs                
                 self.pareto[m][s] = self.pareto[m][s][(self.pareto[m][s][:,3:5]>0).prod(1)==1]
 
@@ -370,7 +377,7 @@ class pareto():
                 parameters = self.p_test[o][s][m]            
                 model = self.models[m]
                 model.analysis_call(self.monkeys[s], self.rt_reg_monkeys[s], parameters)
-                if m == 'fusion':
+                if m == 'fusion' or m == 'sweeping':
                     self.hidden[o][s][m]['sari'] = model.sari[t_start:t_stop]
                     self.hidden[o][s][m]['entropy'] = model.entropy_list[t_start:t_stop]
                     self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
@@ -391,8 +398,7 @@ class pareto():
                     self.hidden[o][s][m]['N'] = model.inference_list[t_start:t_stop]
                     self.hidden[o][s][m]['Qfree'] = model.free_list[t_start:t_stop]
                     self.hidden[o][s][m]['Qbased'] = model.based_list[t_start:t_stop]
-                    self.hidden[o][s][m]['wmean'] = model.wmean_dict
-
+                    self.hidden[o][s][m]['wmean'] = model.wmean_dict                
                 # for mb_role plot
                 self.mb_role[s][o[0:3]+" "+m] = model.inference_list.flatten()
 
