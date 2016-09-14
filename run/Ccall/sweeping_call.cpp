@@ -177,18 +177,6 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 	float kappa=0.0+(1.0-0.0)*kappa_;
 	float shift=0.0+(1.0-0.0)*shift_;
 
-	// std::cout << "alpha : " << alpha << std::endl;
-	// std::cout << "beta : " << beta << std::endl;
-	// std::cout << "noise : " << noise << std::endl;
-	// std::cout << "length : " << length << std::endl;
-	// std::cout << "gain : " << gain << std::endl;
-	// std::cout << "threshold : " << threshold << std::endl;
-	// std::cout << "sigma : " << sigma << std::endl;
-	// std::cout << "gamma : " << gamma << std::endl;
-	// std::cout << "kappa : " << kappa << std::endl;
-	// std::cout << "shift : " << shift << std::endl;
-
-
 	int nb_trials = N;
 	int n_state = 1;
 	int n_action = 4;
@@ -267,7 +255,8 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 	}	
 	
 	for (int i=0;i<nb_trials;i++) 	
-	{								
+	// for (int i=0;i<327;i++) 
+	{				
 		if (sari[i][4]-sari[i-1][4] < 0.0) {
 			// START BLOC //
 			problem = sari[i][1];
@@ -280,7 +269,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			// }
 			
 			for (int m=0;m<n_action;m++) {					
-				values_mf[m] = 0.0
+				values_mf[m] = 0.0;
 				// values_mf[m] = spatial_biases[m]/summ;					
 				// std::cout << spatial_biases[m] << " " ;
 			}
@@ -322,17 +311,38 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 				p[m][1] = 1./(n_action*n_r); 
 				values_mb[m] = 1./n_action;
 			}					// fill with uniform					
-			Hb = max_entropy;			
+			Hb = max_entropy;		
+			// std::cout << " NO SWEEPING" << std::endl;	
 		} 
 
+		// for (int x =0;x<4;x++) {
+		// 	std::cout << values_mb[x] << " ";
+		// }
+		// std::cout<<std::endl;
+
+
 		// START
+		// std::cout << "Hb " << Hb << std::endl;
+		// std::cout << "Hf " << Hf << std::endl;
 		p_decision[0] = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);		
+		// std::cout << p_decision[0] << std::endl;
 		p_retrieval[0] = 1.0-p_decision[0];		
 		fusion(p_a_final, values_mb, values_mf, beta);		
 		p_ak[0] = p_a_final[a];
 		reaction[0] = entropy(p_a_final);
 
 		// std::cout << 0 << " p_ak=" << p_ak[0] << " p_decision=" << p_decision[0] << "p_retrieval=" << p_retrieval[0] << std::endl;
+		// std::cout << "mf= ";
+		// for (int x=0;x<4;x++) {
+		// 	std::cout << values_mf[x] << " ";
+		// }
+		// std::cout << std::endl;
+
+		// std::cout << "mb = ";
+		// for (int x =0;x<4;x++) {
+		// 	std::cout << values_mb[x] << " ";
+		// }
+		// std::cout<<std::endl;
 
 		for (int k=0;k<n_element;k++) {
 			// INFERENCE				
@@ -375,7 +385,13 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			Hb = entropy(p_a_mb);
 			// FUSION
 			fusion(p_a_final, values_mb, values_mf, beta);
-			// std::cout << "fusion " << values_mf[a] << " " << values_mb[a] <<  std::endl;
+			
+			// std::cout << "mb = ";
+			// for (int x =0;x<4;x++) {
+			// 	std::cout << values_mb[x] << " ";
+			// }
+			// std::cout<<std::endl;
+
 			p_ak[k+1] = p_a_final[a];
 			float N = k+2.0;
 			reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
@@ -383,7 +399,8 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			// SIGMOIDE
 			float pA = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);				
 
-			
+			// std::cout << pA << std::endl;
+
 			p_decision[k+1] = pA*p_retrieval[k];
 			p_retrieval[k+1] = (1.0-pA)*p_retrieval[k];
 
@@ -392,6 +409,17 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 
 		values[i] = log(sum_prod(p_ak, p_decision, n_element+1));
 
+		// for (int k=0;k<n_element+1;k++) {
+		// 	std::cout << p_decision[k] << " ";
+		// }
+		// std::cout << std::endl;
+		// for (int k=0;k<n_element+1;k++) {
+		// 	std::cout << p_ak[k] << " ";
+		// }
+		// std::cout << std::endl;
+
+		// std::cout << values[i] << std::endl;
+		// std::cout << std::endl;
 		float val = sum_prod(p_ak, p_decision, n_element+1);						
 			
 		rt[i] = sum_prod(reaction, p_decision, n_element+1);									
@@ -444,7 +472,8 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 				p[m][1] = 1./(n_action*n_r); 
 				values_mb[m] = 1./n_action;
 			}					// fill with uniform					
-			float Hb = max_entropy;						
+			Hb = max_entropy;	
+			nb_inferences = 0;					
 			for (int k=0;k<n_element;k++) {
 				// INFERENCE				
 				float sum = 0.0;
@@ -483,8 +512,17 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			for(int m=0;m<n_action;m++) {
 				p_a_mb[m] = values_mb[m]/sum;
 			}			
-			Hb = entropy(p_a_mb);						
+			Hb = entropy(p_a_mb);
+			// std::cout << " INSIDE SWEE " << Hb << std::endl;
+			// std::cout << "pmb apres sweep = ";
+			// for (int x =0;x<4;x++) {
+			// 	std::cout << values_mb[x] << " ";
+			// }
+			// std::cout<<std::endl;
+
 		}
+		// std::cout << std::endl;
+		
 	}
 	
 	// ALIGN TO MEDIAN

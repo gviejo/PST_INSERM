@@ -1629,22 +1629,22 @@ class Sweeping():
         self.problem = self.sari[0,1]
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
-        for i in xrange(self.N):                    
+        for i in xrange(self.N):
+        # for i in xrange(327):
             if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
+
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    # if case == 'no biais':
-                    #     self.values_mf = np.zeros(4)
-                    # elif case == 'biais':
-                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()                    
+                    self.values_mf = np.zeros(self.n_action)                    
+                    # self.values_mf = self.spatial_biases/self.spatial_biases.sum()                    
                     # shift bias
-                    tmp = self.values_mf[self.current_action]
-                    self.values_mf *= self.parameters['shift']/3.
-                    self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-                    # spatial biaises update
-                    self.spatial_biases[self.sari[i,2]-1] += 1.0
+                    # tmp = self.values_mf[self.current_action]
+                    # self.values_mf *= self.parameters['shift']/3.
+                    # self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+                    # # spatial biaises update
+                    # self.spatial_biases[self.sari[i,2]-1] += 1.0
 
 
             # START TRIAL
@@ -1667,8 +1667,9 @@ class Sweeping():
                 self.p = self.uniform[:,:]                
                 self.Hb = self.max_entropy
                 self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        
+                            
             # START            
-            self.sigmoideModule()
+            self.sigmoideModule()            
             self.p_sigmoide[0] = self.pA
             self.p_decision[0] = self.pA
             self.p_retrieval[0] = 1.0-self.pA            
@@ -1677,11 +1678,13 @@ class Sweeping():
             self.p_ak[0] = self.p_a_final[self.current_action]            
             H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
             reaction[0] = float(H)        
-
+            # print "mf = ", self.values_mf
+            # print "mb = ", self.p_a_mb
+            # print 0, " p_ak=", self.p_ak[0], " p_decision=", self.p_decision[0], " p_retrieval=", self.p_retrieval[0]
             for j in xrange(self.n_element):            
                 self.inferenceModule()
                 self.evaluationModule()
-                # print "mf = ", self.values_mf
+                # print "mb = ", self.p_a_mb
                 self.fusionModule()                
                 self.p_ak[j+1] = self.p_a_final[self.current_action]                
                 H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
@@ -1692,11 +1695,14 @@ class Sweeping():
                 self.p_sigmoide[j+1] = self.pA            
                 self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
                 self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
-                # print j+1, " p_ak=", self.p_ak[j+1], " p_decision=", self.p_decision[j+1], " p_retrieval=", self.p_retrieval[0]
+                # print j+1, " p_ak=", self.p_ak[j+1], " p_decision=", self.p_decision[j+1], " p_retrieval=", self.p_retrieval[j+1]
             
             # print np.dot(self.p_decision,self.p_ak)
+            # print self.p_decision
+            # print self.p_ak
             self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
             # print self.value[i]
+            # print "\n"
             # print self.p_decision
             self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
             # print self.reaction[i]
@@ -1709,8 +1715,10 @@ class Sweeping():
                 self.nb_inferences = 0
                 for j in xrange(self.n_element):
                     self.inferenceModule()
-                    self.evaluationModule()                
-
+                self.evaluationModule()      
+                # print "INSIDE SWEE ", self.Hb          
+                # print "apres sweep ", self.p_a_mb
+            # print "\n"
 
         # ALIGN TO MEDIAN
         self.reaction = self.reaction - np.median(self.reaction)
@@ -1763,13 +1771,14 @@ class Sweeping():
                     self.problem = self.sari[i][1]
                     self.n_element = 0
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-                    # shift bias
-                    tmp = self.values_mf[self.current_action]
-                    self.values_mf *= self.parameters['shift']/3.
-                    self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-                    # spatial biaises update
-                    self.spatial_biases[self.sari[i,2]-1] += 1.0
+                    self.values_mf = np.zeros(self.n_action)
+                    # self.values_mf = self.spatial_biases/self.spatial_biases.sum()
+                    # # shift bias
+                    # tmp = self.values_mf[self.current_action]
+                    # self.values_mf *= self.parameters['shift']/3.
+                    # self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+                    # # spatial biaises update
+                    # self.spatial_biases[self.sari[i,2]-1] += 1.0
                     #######################
                     nb_search = np.sum(self.sari[start:i-1,4] == 0)
                     nb_repeat = np.sum(self.sari[start:i-1,4] == 1)
@@ -1908,7 +1917,7 @@ class Sweeping():
         p_a_r = p_ra/p_r
         self.p_a_mb = p_a_r[:,1]/p_a_r[:,0]
         p_a_mb = self.p_a_mb/np.sum(self.p_a_mb)
-        self.Hb = -np.sum(p_a_mb*np.log2(p_a_mb))
+        self.Hb = -np.sum(p_a_mb*np.log2(p_a_mb))        
 
     def sigmoideModule(self):
         np.seterr(invalid='ignore')
@@ -1920,7 +1929,7 @@ class Sweeping():
     def fusionModule(self):
         np.seterr(invalid='ignore')
         self.values_net = self.p_a_mb+self.values_mf
-        tmp = np.exp(self.values_net*float(self.parameters['beta']))
+        tmp = np.exp((self.values_net-np.max(self.values_net))*float(self.parameters['beta']))
         
         # print "fusion ", self.values_mf[self.current_action], " ", self.p_a_mb[self.current_action]
         # print "tmp =", tmp

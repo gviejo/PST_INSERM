@@ -1,74 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# To hand search a solution for m and p monkeys
+
+import sys
+import os
 import numpy as np
 from pylab import *
-import cPickle as pickle
+sys.path.append("../src")
 
-monkeys =   { 'g':12701,
-              'm':34752,
-              'p':27692,
-              'r':11634,
-              's':13348 }
-
-data = {}
-for s in monkeys.keys():
-	with open("../data/data_pickle/"+s+".pickle", 'rb') as f:
-		data[s] = pickle.load(f)
-
-# quick test of qlearning sferes call
-def alignToMedian(a):        
-    self.model.reaction = self.model.reaction - np.median(self.model.reaction)
-    self.model.reaction = self.model.reaction / (np.percentile(self.model.reaction, 75)-np.percentile(self.model.reaction, 25))        
-def softMax(values):
-    tmp = np.exp(values*beta)    
-    return tmp/float(np.sum(tmp))
-
-s = 'g'
-
-alpha = 0.508241
-beta = 0.0657192*100.0
-sigma = 0.16
-
-Q = np.zeros((4))
-log = np.zeros(monkeys[s])
-rt = np.zeros(monkeys[s])
-q_values = np.zeros((monkeys[s],4))
-rtm = data[s][:,-1]
-for t in xrange(monkeys[s]):
-# for t in xrange(6):
-	state = int(data[s][t,4]-1)
-	action =int(data[s][t,5]-1)
-	reward =int(data[s][t,3])
-	p_a = softMax(Q)	
-	rt[t] = -(p_a*np.log2(p_a)).sum()	
-	log[t] = np.log(p_a[action])
-	q_values[t] = Q
-	if (reward == 1):
-		r = 1.0
-	elif (reward == 0):
-		r = -1.0
-	
-	delta = r - Q[action]
-	Q[action] += alpha*delta
-
-	# print rt[t], rtm[t]
+from Models import *
 
 
-rt = rt - np.median(rt)
-rt = rt / (np.percentile(rt, 75) - np.percentile(rt, 25))
+monkeys = {}
+N = {}        
+rt_reg_monkeys = {}
+for s in os.listdir("../data/data_txt_3_repeat/"):
+	if "rt_reg.txt" in s:
+		rt_reg_monkeys[s.split("_")[0]] = np.genfromtxt("../data/data_txt_3_repeat/"+s)
+	else :
+		monkeys[s.split(".")[0]] = np.genfromtxt("../data/data_txt_3_repeat/"+s)
+		N[s.split(".")[0]] = len(monkeys[s.split(".")[0]])               
 
-# for t in xrange(6):
-# 	print rt[t], rtm[t]
+parameters = {"alpha":0.9199, "beta":2.0662, "noise":0.1, "length":2.9598, "gain":4.1754, "threshold":4.7774, "gamma":1.1308,
+ "sigma":0.3297, "kappa":0.0, "shift":0.0404}
 
-print log.sum()+100000, -np.sum(np.power((rt - rtm), 2))+100000
-
-# figure()
-# plot(rt)
-# plot(rtm)
+model = Sweeping()
+fit = model.sferes_call(monkeys['g'], rt_reg_monkeys['g'], parameters)
+print fit[0], fit[1]
 
 
-# figure()
-# plot(q_values)
-
-# show()

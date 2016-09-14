@@ -97,5 +97,7 @@ SFERES 16
 	pas de shift
 	forgetting
 	un seul alpha
+	ne pas oublier inf et nan
 
-
+SFERES 17
+	tester avec gamma
