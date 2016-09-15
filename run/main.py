@@ -22,11 +22,11 @@ for s in os.listdir("../data/data_txt_3_repeat/"):
 		monkeys[s.split(".")[0]] = np.genfromtxt("../data/data_txt_3_repeat/"+s)
 		N[s.split(".")[0]] = len(monkeys[s.split(".")[0]])               
 
-parameters = {"alpha":0.9199, "beta":2.0662, "noise":0.1, "length":2.9598, "gain":4.1754, "threshold":4.7774, "gamma":1.1308,
- "sigma":0.3297, "kappa":0.0, "shift":0.0404}
+parameters = {"alpha":0.7646, "beta":1.3057, "noise":0.0713, "length":4.6741, "gain":0.0, "threshold":3.6129, "gamma":7.5942, "sigma":2.0893, "kappa":0.0079, "shift":0.1079}
+
 
 model = Sweeping()
-fit = model.sferes_call(monkeys['g'], rt_reg_monkeys['g'], parameters)
-print fit[0], fit[1]
+fit = model.sferes_call(monkeys['m'], rt_reg_monkeys['m'], parameters)
+# print fit[0], fit[1]
 
 

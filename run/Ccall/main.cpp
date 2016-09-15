@@ -35,9 +35,9 @@ int main () {
 	float fit [2] = {0.0, 0.0};
 	fit[0] = 0.0 ; fit[1] = 0.0;
 
-	int N =  map_monkeys_length_trial['g'];
+	int N =  map_monkeys_length_trial['m'];
 
-	sferes_call(fit, N, "../../data/data_txt_3_repeat/g", 0, 0.227429, 1, 0.203377, 0.00535952, 0.3135, 0.239221, 0.371858, 1, 0.278448);
+	sferes_call(fit, N, "../../data/data_txt_3_repeat/m", 0, 0.227429, 1, 0.203377, 0.00535952, 0.3135, 0.239221, 0.371858, 1, 0.278448);
 
 	std::cout << fit[0] << " " << fit[1] << std::endl;  
    	return 0;

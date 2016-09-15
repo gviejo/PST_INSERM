@@ -6,7 +6,7 @@
 #include <iterator>
 #include <math.h>
 #include <cmath>
-
+#include <iomanip>
 
 using namespace std;
 
@@ -164,7 +164,7 @@ float sum_prod(float *a, float *b, int n) {
 void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, float beta_, float noise_, float length_, float gain_, float threshold_, float gamma_, float sigma_, float kappa_, float shift_)
 {
 
-	///////////////////
+	// /////////////////
 	// parameters
 	float alpha=0.0+alpha_*(1.0-0.0);
 	float beta=0.0+beta_*(100.0-0.0);
@@ -176,6 +176,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 	float gamma=0.0+(100.0-0.0)*gamma_;
 	float kappa=0.0+(1.0-0.0)*kappa_;
 	float shift=0.0+(1.0-0.0)*shift_;
+	
 
 	int nb_trials = N;
 	int n_state = 1;
@@ -418,7 +419,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 		// }
 		// std::cout << std::endl;
 
-		// std::cout << values[i] << std::endl;
+		// std::cout << std::setprecision(15) << values[i] << std::endl;
 		// std::cout << std::endl;
 		float val = sum_prod(p_ak, p_decision, n_element+1);						
 			
@@ -457,7 +458,14 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 		} else if (r == 1) {
 			reward = 1.0;
 		}
-		float delta = reward - values_mf[a];
+		
+		float max_next = 0;
+		for (int m;m<n_action;m++) {
+			if (values_mf[m]>max_next) {
+				max_next = values_mf[m];
+			}
+		}
+		float delta = reward + shift*max_next - values_mf[a];
 		values_mf[a]+=(alpha*delta);
 
 		for (int m=0;m<n_action;m++) {

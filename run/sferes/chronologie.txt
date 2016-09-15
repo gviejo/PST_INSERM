@@ -100,4 +100,7 @@ SFERES 16
 	ne pas oublier inf et nan
 
 SFERES 17
-	tester avec gamma
+	sweeping + gamma
+	pas de meta learning
+	pas de reset de Q-Learning
+	shift sert de gamma

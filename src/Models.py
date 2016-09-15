@@ -1630,7 +1630,7 @@ class Sweeping():
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
         for i in xrange(self.N):
-        # for i in xrange(327):
+        # for i in xrange(327):            
             if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
@@ -1701,7 +1701,7 @@ class Sweeping():
             # print self.p_decision
             # print self.p_ak
             self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
-            # print self.value[i]
+            print self.value[i]
             # print "\n"
             # print self.p_decision
             self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
