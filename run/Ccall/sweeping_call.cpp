@@ -269,8 +269,8 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			// 	summ+=spatial_biases[m];
 			// }
 			
-			for (int m=0;m<n_action;m++) {					
-				values_mf[m] = 0.0;
+			// for (int m=0;m<n_action;m++) {					
+			// 	values_mf[m] = 0.0;
 				// values_mf[m] = spatial_biases[m]/summ;					
 				// std::cout << spatial_biases[m] << " " ;
 			}
