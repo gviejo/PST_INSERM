@@ -10,29 +10,29 @@
 
 using namespace std;
 
-bool myisnan(float var)
+bool myisnan(double var)
 {
-    volatile float temp1 = var;
-    volatile float temp2 = var;
+    volatile double temp1 = var;
+    volatile double temp2 = var;
     return temp1 != temp2;
 }
 
-void alignToMedian(float *daArray, int iSize) {    
-    float* dpSorted = new float[iSize];
+void alignToMedian(double *daArray, int iSize) {    
+    double* dpSorted = new double[iSize];
     for (int i = 0; i < iSize; ++i) dpSorted[i] = daArray[i];
     for (int i = iSize - 1; i > 0; --i) {
         for (int j = 0; j < i; ++j) {
             if (dpSorted[j] > dpSorted[j+1]) {
-                float dTemp = dpSorted[j];
+                double dTemp = dpSorted[j];
                 dpSorted[j] = dpSorted[j+1];
                 dpSorted[j+1] = dTemp;
             }
         }
     }
-    float dMedian = dpSorted[(iSize/2)-1]+(dpSorted[iSize/2]-dpSorted[(iSize/2)-1])/2.0;    
+    double dMedian = dpSorted[(iSize/2)-1]+(dpSorted[iSize/2]-dpSorted[(iSize/2)-1])/2.0;    
     for (int i=0;i<iSize;i++) {daArray[i] = daArray[i]-dMedian;dpSorted[i] = dpSorted[i]-dMedian;}
-    float dQ1 = dpSorted[(iSize/4)-1]+((dpSorted[(iSize/4)]-dpSorted[(iSize/4)-1])/2.0);
-    float dQ3 = dpSorted[(iSize/4)*3-1]+((dpSorted[(iSize/4)*3+1]-dpSorted[(iSize/4)*3-1])/2.0);
+    double dQ1 = dpSorted[(iSize/4)-1]+((dpSorted[(iSize/4)]-dpSorted[(iSize/4)-1])/2.0);
+    double dQ3 = dpSorted[(iSize/4)*3-1]+((dpSorted[(iSize/4)*3+1]-dpSorted[(iSize/4)*3-1])/2.0);
     // std::cout << dpSorted[((iSize/4)*3)-2] << std::endl;
     // std::cout << dpSorted[((iSize/4)*3)-1] << std::endl;
     // // std::cout << dQ3 << std::endl;
@@ -41,10 +41,10 @@ void alignToMedian(float *daArray, int iSize) {
     delete [] dpSorted;
     for (int i=0;i<iSize;i++) daArray[i] = daArray[i]/(dQ3-dQ1);    
 }
-void softmax(float *p, float *v, float b) {
-	float sum = 0.0;
-	float tmp[4];		
-	float max_de_sum = -10000.0;
+void softmax(double *p, double *v, double b) {
+	double sum = 0.0;
+	double tmp[4];		
+	double max_de_sum = -10000.0;
 	//summing mb + mf
 	for (int i=0;i<4;i++) {
 		if (v[i] > max_de_sum) {
@@ -74,23 +74,23 @@ void softmax(float *p, float *v, float b) {
 	// 	}
 	// }	
 }
-float sigmoide(float Hb, float Hf, float n, float i, float t, float g) {		
-	float x = 2.0 * -log2(0.25) - Hb - Hf;
+double sigmoide(double Hb, double Hf, double n, double i, double t, double g) {		
+	double x = 2.0 * -log2(0.25) - Hb - Hf;
 	// std::cout << pow((n-i),t) <<  std::endl;
-	float tmp = 1.0/(1.0+(pow((n-i),t)*exp(-x*g)));
+	double tmp = 1.0/(1.0+(pow((n-i),t)*exp(-x*g)));
 	// std::cout << " n=" << n << " i=" << i << "Hb = "<< Hb << ", Hf = " << Hf << " x=" << x << " p(A)=" << tmp << " threshold = " << t << " gain = " << g << std::endl;
 	// std::cout << tmp << std::endl;
 	return tmp;
 	// return 1.0/(1.0+((n-i)*t)*exp(-x*g));
 
 }
-void fusion(float *p_a, float *mb, float *mf, float beta) {
-	float tmp[4];
+void fusion(double *p_a, double *mb, double *mf, double beta) {
+	double tmp[4];
 	int tmp2[4];
-	float sum = 0.0;
-	float ninf = 0;	
-	float mbplusmf[4];
-	float max_de_sum = -10000.0;
+	double sum = 0.0;
+	double ninf = 0;	
+	double mbplusmf[4];
+	double max_de_sum = -10000.0;
 	//summing mb + mf
 	for (int i=0;i<4;i++) {
 		mbplusmf[i] = mb[i] + mf[i]; 
@@ -148,50 +148,63 @@ void fusion(float *p_a, float *mb, float *mf, float beta) {
 	// std::cout << std::endl;
 	return;
 }
-float entropy(float *p) {
-	float tmp = 0.0;
+double entropy(double *p) {
+	double tmp = 0.0;
 	for (int i=0;i<4;i++) {tmp+=p[i]*log2(p[i]);}
 	return -tmp;
 }
-float sum_prod(float *a, float *b, int n) {
-	float tmp = 0.0;
+double sum_prod(double *a, double *b, int n) {
+	double tmp = 0.0;
 	for (int i=0;i<n;i++) {
 		tmp+=(a[i]*b[i]);
 	}
 	return tmp;
 }
-// void sferes_call(float * fit, const char* data_dir, float alpha_, float beta_, float noise_, float length_, float gain_, float threshold_, float gamma_)
-void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, float beta_, float noise_, float length_, float gain_, float threshold_, float gamma_, float sigma_, float kappa_, float shift_)
+// void sferes_call(double * fit, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_)
+void sferes_call(double * fit, const int N, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_, double sigma_, double kappa_, double shift_)
 {
 
 	// /////////////////
 	// parameters
-	float alpha=0.0+alpha_*(1.0-0.0);
-	float beta=0.0+beta_*(100.0-0.0);
-	float noise=0.0+noise_*(0.1-0.0);
+	double alpha=0.0+alpha_*(1.0-0.0);
+	double beta=0.0+beta_*(100.0-0.0);
+	double noise=0.0+noise_*(0.1-0.0);
 	int length=1+(10-1)*length_;
-	float gain=0.00001+(10000.0-0.00001)*gain_;
-	float threshold=0.0+(20.0-0.0)*threshold_;
-	float sigma=0.0+(20.0-0.0)*sigma_;	
-	float gamma=0.0+(100.0-0.0)*gamma_;
-	float kappa=0.0+(1.0-0.0)*kappa_;
-	float shift=0.0+(1.0-0.0)*shift_;
+	double gain=0.00001+(10000.0-0.00001)*gain_;
+	double threshold=0.0+(20.0-0.0)*threshold_;
+	double sigma=0.0+(20.0-0.0)*sigma_;	
+	double gamma=0.0+(100.0-0.0)*gamma_;
+	double kappa=0.0+(1.0-0.0)*kappa_;
+	double shift=0.0+(1.0-0.0)*shift_;
+
+	// std::cout << "alpha : " << alpha << std::endl;
+	// std::cout << "beta : " << beta << std::endl;
+	// std::cout << "noise : " << noise << std::endl;
+	// std::cout << "length : " << length << std::endl;
+	// std::cout << "gain : " << gain << std::endl;
+	// std::cout << "threshold : " << threshold << std::endl;
+	// std::cout << "sigma : " << sigma << std::endl;
+	// std::cout << "gamma : " << gamma << std::endl;
+	// std::cout << "kappa : " << kappa << std::endl;
+	// std::cout << "shift : " << shift << std::endl;
+
 	
+
 
 	int nb_trials = N;
 	int n_state = 1;
 	int n_action = 4;
 	int n_r = 2;
 	int problem;
-	float max_entropy = -log2(0.25);
+	double max_entropy = -log2(0.25);
 	///////////////////
 	int sari [N][5];	
-	float mean_rt [30][3];	
-	float values [N]; // action probabilities according to subject
-	float rt [N]; // rt du model	
-	float p_a_mf [n_action];
-	float p_a_mb [n_action];
-	float spatial_biases [n_action];
+	double mean_rt [30][3];	
+	double values [N]; // action probabilities according to subject
+	double rt [N]; // rt du model	
+	double p_a_mf [n_action];
+	double p_a_mb [n_action];
+	double spatial_biases [n_action];
 
 	const char* _data_dir = data_dir;
 	std::string file1 = _data_dir;
@@ -207,9 +220,9 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 		{  
 			getline (data_file1,line);			
 			stringstream stream(line);
-			std::vector<float> values_(
-     			(std::istream_iterator<float>(stream)),
-     			(std::istream_iterator<float>()));
+			std::vector<double> values_(
+     			(std::istream_iterator<double>(stream)),
+     			(std::istream_iterator<double>()));
 
 			sari[i][0] = (int)values_[3]; // reward
 			sari[i][1] = (int)values_[4]; // problem
@@ -227,9 +240,9 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 		{  
 			getline (data_file2,line);			
 			stringstream stream(line);
-			std::vector<float> values_(
-				(std::istream_iterator<float>(stream)),
-				(std::istream_iterator<float>()));
+			std::vector<double> values_(
+				(std::istream_iterator<double>(stream)),
+				(std::istream_iterator<double>()));
 			for (int j=0;j<3;j++) {
 				mean_rt[i][j] = values_[j];
 			}
@@ -237,26 +250,26 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 	data_file2.close();	
 	}		
 	problem = sari[0][1];
-	float p_a [length][n_action];
-	float p_r_a [length][n_action][n_r];				
-	float p [n_action][2];		
-	float values_mf [n_action];	
-	float values_mb [n_action];
-	float tmp [n_action][2];
-	float p_a_r [n_action][2];
-	float reward = 0.0;
-	float p_r [2];
+	double p_a [length][n_action];
+	double p_r_a [length][n_action][n_r];				
+	double p [n_action][2];		
+	double values_mf [n_action];	
+	double values_mb [n_action];
+	double tmp [n_action][2];
+	double p_a_r [n_action][2];
+	double reward = 0.0;
+	double p_r [2];
 	int n_element = 0;
 	int s, a, r;		
-	float Hf = max_entropy;
-	float Hb = max_entropy;			
+	double Hf = max_entropy;
+	double Hb = max_entropy;			
 	for (int m=0;m<n_action;m++) {
 		values_mf[m] = 0.0;
 		spatial_biases[m] = 1./n_action;
 	}	
 	
 	for (int i=0;i<nb_trials;i++) 	
-	// for (int i=0;i<327;i++) 
+	// for (int i=0;i<22;i++) 
 	{				
 		if (sari[i][4]-sari[i-1][4] < 0.0) {
 			// START BLOC //
@@ -264,7 +277,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			n_element = 0;
 			
 			// // RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-			// float summ = 0.0;
+			// double summ = 0.0;
 			// for (int m=0;m<n_action;m++) { // normalise spatial bias
 			// 	summ+=spatial_biases[m];
 			// }
@@ -273,7 +286,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			// 	values_mf[m] = 0.0;
 				// values_mf[m] = spatial_biases[m]/summ;					
 				// std::cout << spatial_biases[m] << " " ;
-			}
+			// }
 			// std::cout << std::endl;
 			// shift bias
 			// for (int m=0;m<n_action;m++) {
@@ -292,18 +305,18 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 		r = sari[i][0];	
 		// QLEARNING CALL
 		softmax(p_a_mf, values_mf, gamma);
-		float Hf = 0.0; 
+		double Hf = 0.0; 
 		for (int n=0;n<n_action;n++){
 			Hf-=p_a_mf[n]*log2(p_a_mf[n]);
 		}
 		// BAYESIAN CALL
 		int nb_inferences = 0;
-		float p_decision [n_element+1];
-		float p_retrieval [n_element+1];
-		float p_ak [n_element+1];
-		float reaction [n_element+1];
-		float values_net [n_action];
-		float p_a_final [n_action];
+		double p_decision [n_element+1];
+		double p_retrieval [n_element+1];
+		double p_ak [n_element+1];
+		double reaction [n_element+1];
+		double values_net [n_action];
+		double p_a_final [n_action];
 
 		// NO SWEEPING
 		if ((sari[i][4] == 1) || (i == 0) || (sari[i][4]-sari[i-1][4] < 0.0)) {
@@ -347,7 +360,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 
 		for (int k=0;k<n_element;k++) {
 			// INFERENCE				
-			float sum = 0.0;
+			double sum = 0.0;
 			for (int m=0;m<n_action;m++) {
 				for (int o=0;o<n_r;o++) {
 					p[m][o] += (p_a[k][m] * p_r_a[k][m][o]);
@@ -394,11 +407,11 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			// std::cout<<std::endl;
 
 			p_ak[k+1] = p_a_final[a];
-			float N = k+2.0;
+			double N = k+2.0;
 			reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
 		
 			// SIGMOIDE
-			float pA = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);				
+			double pA = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);				
 
 			// std::cout << pA << std::endl;
 
@@ -419,9 +432,9 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 		// }
 		// std::cout << std::endl;
 
-		// std::cout << std::setprecision(15) << values[i] << std::endl;
+		// std::cout << values[i] << std::endl;
 		// std::cout << std::endl;
-		float val = sum_prod(p_ak, p_decision, n_element+1);						
+		double val = sum_prod(p_ak, p_decision, n_element+1);						
 			
 		rt[i] = sum_prod(reaction, p_decision, n_element+1);									
 		// std::cout << "rt " << rt[i] << std::endl;
@@ -459,13 +472,13 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			reward = 1.0;
 		}
 		
-		float max_next = 0;
-		for (int m;m<n_action;m++) {
+		double max_next = 0;
+		for (int m=0;m<n_action;m++) {
 			if (values_mf[m]>max_next) {
 				max_next = values_mf[m];
 			}
 		}
-		float delta = reward + shift*max_next - values_mf[a];
+		double delta = reward + shift*max_next - values_mf[a];
 		values_mf[a]+=(alpha*delta);
 
 		for (int m=0;m<n_action;m++) {
@@ -484,7 +497,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			nb_inferences = 0;					
 			for (int k=0;k<n_element;k++) {
 				// INFERENCE				
-				float sum = 0.0;
+				double sum = 0.0;
 				for (int m=0;m<n_action;m++) {
 					for (int o=0;o<n_r;o++) {
 						p[m][o] += (p_a[k][m] * p_r_a[k][m][o]);
@@ -500,7 +513,7 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 			}
 			nb_inferences+=1;
 			// // EVALUATION
-			float sum = 0.0;								
+			double sum = 0.0;								
 			for (int o=0;o<n_r;o++) {
 				p_r[o] = 0.0;						
 			}
@@ -537,8 +550,8 @@ void sferes_call(float * fit, const int N, const char* data_dir, float alpha_, f
 	alignToMedian(rt, N);	
 	
 	// REARRANGE TO REPRESENTATIVE STEPS
-	float mean_model [30];
-	float sum_tmp [30];
+	double mean_model [30];
+	double sum_tmp [30];
 	for (int i=0;i<30;i++) {
 		mean_model[i] = 0;
 		sum_tmp[i] = 0;

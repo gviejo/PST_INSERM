@@ -350,7 +350,11 @@ class pareto():
                 line = np.where((data[:,0] == self.indd[o][s][2]) & ( data[:,1] == self.indd[o][s][3]))                
                 print o, s, m
                 print fit[0], fit[1]
-                print data[line,2][0,0] - 50000.0, data[line,3][0,0] - 50000.0, "\n"
+                print data[line,2][0,0] - 50000.0, data[line,3][0,0] - 50000.0
+                print "data ", int(self.indd[o][s][1])
+                print "line ", line
+                # print data[line]
+                print "\n"
                 self.beh[o][s][m] = model.rt_model
         # evaluate for rt extremum
         self.beh_rt_extremum = dict()

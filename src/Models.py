@@ -1630,14 +1630,14 @@ class Sweeping():
         self.p_a_final = np.zeros(self.n_action)
         self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
         for i in xrange(self.N):
-        # for i in xrange(327):            
+        # for i in xrange(22):            
             if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
                     # START BLOC
                     self.problem = self.sari[i][1]
                     self.n_element = 0
 
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    self.values_mf = np.zeros(self.n_action)                    
+                    # self.values_mf = np.zeros(self.n_action)                    
                     # self.values_mf = self.spatial_biases/self.spatial_biases.sum()                    
                     # shift bias
                     # tmp = self.values_mf[self.current_action]
@@ -1701,7 +1701,7 @@ class Sweeping():
             # print self.p_decision
             # print self.p_ak
             self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
-            print self.value[i]
+            # print self.value[i]
             # print "\n"
             # print self.p_decision
             self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
@@ -1771,7 +1771,7 @@ class Sweeping():
                     self.problem = self.sari[i][1]
                     self.n_element = 0
                     # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    self.values_mf = np.zeros(self.n_action)
+                    # self.values_mf = np.zeros(self.n_action)
                     # self.values_mf = self.spatial_biases/self.spatial_biases.sum()
                     # # shift bias
                     # tmp = self.values_mf[self.current_action]
@@ -1964,7 +1964,7 @@ class Sweeping():
         self.p_r_a[0, self.current_action, int(r)] = 1.0        
         # Updating model free
         r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
-        self.delta = float(r)-self.values_mf[self.current_action]        
+        self.delta = float(r)+self.parameters['shift']*np.max(self.values_mf)-self.values_mf[self.current_action]        
         self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
         index = range(self.n_action)
         index.pop(int(self.current_action))        
