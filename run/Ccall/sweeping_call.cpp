@@ -56,30 +56,32 @@ void softmax(double *p, double *v, double b) {
 		tmp[i] = exp((v[i]-max_de_sum)*b);
 		sum+=tmp[i];		
 	}			
+
 	for (int i=0;i<4;i++) {
 		p[i] = tmp[i]/sum;		
 	}
-	
-	// for (int i=0;i<5;i++) {
-	// 	if (p[i] == 0) {
-	// 		sum = 0.0;
-	// 		for (int i=0;i<5;i++) {
-	// 			p[i]+=1e-4;
-	// 			sum+=p[i];
-	// 		}
-	// 		for (int i=0;i<5;i++) {
-	// 			p[i]/=sum;
-	// 		}
-	// 		return;
-	// 	}
-	// }	
+
+	for (int i=0;i<4;i++) {
+		if (p[i] == 0) {
+			sum = 0.0;
+			for (int i=0;i<4;i++) {
+				p[i]+=1e-8;
+				sum+=p[i];
+			}
+			for (int i=0;i<4;i++) {
+				p[i]/=sum;
+			}			
+		}
+	}
+
+
 }
 double sigmoide(double Hb, double Hf, double n, double i, double t, double g) {		
 	double x = 2.0 * -log2(0.25) - Hb - Hf;
 	// std::cout << pow((n-i),t) <<  std::endl;
 	double tmp = 1.0/(1.0+(pow((n-i),t)*exp(-x*g)));
 	// std::cout << " n=" << n << " i=" << i << "Hb = "<< Hb << ", Hf = " << Hf << " x=" << x << " p(A)=" << tmp << " threshold = " << t << " gain = " << g << std::endl;
-	// std::cout << tmp << std::endl;
+	// std::cout << tmp << " ";
 	return tmp;
 	// return 1.0/(1.0+((n-i)*t)*exp(-x*g));
 
@@ -97,37 +99,14 @@ void fusion(double *p_a, double *mb, double *mf, double beta) {
 		if (mbplusmf[i] > max_de_sum) {
 			max_de_sum = mbplusmf[i];
 		}
-	}
-	// std::cout << "tmp=";
+	}	
 	for (int i=0;i<4;i++) {				
 		tmp[i] = exp((mbplusmf[i]-max_de_sum)*beta);
-		// std::cout << tmp[i] << " ";
-		if (isinf(tmp[i])) {
-			tmp2[i] = 1;
-			ninf += 1.0;
-		} else {
-			tmp2[i] = 0;
-		}
 		sum+=tmp[i];
 	}
-	// std::cout << std::endl;
-	// std::cout << "ninf " << ninf << std::endl;
-	
-	if (ninf > 0.0) {
-		for (int i=0;i<4;i++) {
-			if (tmp2[i] == 1) {				
-				p_a[i] = (1.0 - 0.0000001 * (4.0 - ninf))/ninf;
-			}
-			else {
-				p_a[i] = 0.0000001;
-			}
-		}
-	}
-	else {
-		for (int i=0;i<4;i++) {				
-			p_a[i] = tmp[i]/sum;		
-		}		
-	}		
+	for (int i=0;i<4;i++) {				
+		p_a[i] = tmp[i]/sum;		
+	}			
 	for (int i=0;i<4;i++) {
 		if (p_a[i] == 0) {
 			sum = 0.0;
@@ -137,15 +116,9 @@ void fusion(double *p_a, double *mb, double *mf, double beta) {
 			}
 			for (int i=0;i<4;i++) {
 				p_a[i]/=sum;
-			}
-			// return;
+			}			
 		}
 	}
-	// std::cout << " p_afinal = ";
-	// for (int i=0;i<4;i++) {
-	// 	std::cout <<p_a[i] << " ";
-	// }
-	// std::cout << std::endl;
 	return;
 }
 double entropy(double *p) {
@@ -306,9 +279,10 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		// QLEARNING CALL
 		softmax(p_a_mf, values_mf, gamma);
 		double Hf = 0.0; 
-		for (int n=0;n<n_action;n++){
+		for (int n=0;n<n_action;n++){			
 			Hf-=p_a_mf[n]*log2(p_a_mf[n]);
 		}
+
 		// BAYESIAN CALL
 		int nb_inferences = 0;
 		double p_decision [n_element+1];
@@ -409,6 +383,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			p_ak[k+1] = p_a_final[a];
 			double N = k+2.0;
 			reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
+
 		
 			// SIGMOIDE
 			double pA = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);				
@@ -417,6 +392,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 
 			p_decision[k+1] = pA*p_retrieval[k];
 			p_retrieval[k+1] = (1.0-pA)*p_retrieval[k];
+
 
 			// std::cout << k+1 << " p_ak=" << p_ak[k+1] << " p_decision=" << p_decision[k+1] << "p_retrieval=" << p_retrieval[k+1] << std::endl;
 		}		
@@ -437,7 +413,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		double val = sum_prod(p_ak, p_decision, n_element+1);						
 			
 		rt[i] = sum_prod(reaction, p_decision, n_element+1);									
-		// std::cout << "rt " << rt[i] << std::endl;
+		// std::cout << rt[i] << " ";
 
 		// UPDATE MEMORY 						
 		for (int k=length-1;k>0;k--) {						
@@ -571,11 +547,9 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		fit[1] -= pow(mean_model[i] - mean_rt[i][1], 2.0);
 	}		
 
-	// std::cout << fit[0] << " " << fit[1] << std::endl;
-
-	if (std::isnan(fit[0]) || std::isinf(fit[0]) || std::isinf(fit[1]) || std::isnan(fit[1])) {
-		fit[0]=-1e+10;
-		fit[1]=-1e+10;
+	if (std::isnan(fit[0]) || std::isinf(fit[0]) || std::isinf(fit[1]) || std::isnan(fit[1]) || fit[0] < -1e+30 || fit[1] < -1e+30) {
+		fit[0]=-1e+15;
+		fit[1]=-1e+15;
 		return;
 	}
 }

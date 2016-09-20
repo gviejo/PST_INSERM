@@ -37,7 +37,7 @@ int main () {
 
 	int N =  map_monkeys_length_trial['p'];
 
-	sferes_call(fit, N, "../../data/data_txt_3_repeat/p", 0.000173561, 0.570882, 0.442314, 0.221988, 0.837142, 0.711815, 0.702172, 1, 0.970973, 0);
+	sferes_call(fit, N, "../../data/data_txt_3_repeat/p", 0.553512,0.980996,0.10593,0.948521,0.8652,0.661834,0.117229,0.266882,0.863318,0.82395);
 
 	std::cout << fit[0] << " " << fit[1] << std::endl;  
    	return 0;
