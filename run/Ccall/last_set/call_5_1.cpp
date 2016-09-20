@@ -240,29 +240,6 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			// START BLOC //
 			problem = sari[i][1];
 			n_element = 0;
-			
-			// // RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-			// double summ = 0.0;
-			// for (int m=0;m<n_action;m++) { // normalise spatial bias
-			// 	summ+=spatial_biases[m];
-			// }
-			
-			// for (int m=0;m<n_action;m++) {					
-			// 	values_mf[m] = 0.0;
-				// values_mf[m] = spatial_biases[m]/summ;					
-				// std::cout << spatial_biases[m] << " " ;
-			// }
-			// std::cout << std::endl;
-			// shift bias
-			// for (int m=0;m<n_action;m++) {
-			// 	if (m == sari[i-1][2]-1) {
-			// 		values_mf[m] *= (1.0-shift);		
-			// 	} else {
-			// 		values_mf[m] *= (shift/3.);
-			// 	}
-			// }				
-			// spatial biases update
-			// spatial_biases[sari[i][2]-1] += 1.0;
 		}		
 		// START TRIAL //
 		// COMPUTE VALUE		
@@ -290,6 +267,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 				p[m][0] = 1./(n_action*n_r); 
 				p[m][1] = 1./(n_action*n_r); 
 				values_mb[m] = 1./n_action;
+				p_a_mb[m] = 1./n_action;
 			}					// fill with uniform					
 			Hb = max_entropy;		
 			// std::cout << " NO SWEEPING" << std::endl;	
@@ -510,7 +488,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			// std::cout<<std::endl;
 
 		}
-		// std::cout << std::endl;
+		
 		
 	}
 	

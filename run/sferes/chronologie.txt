@@ -104,3 +104,7 @@ SFERES 17
 	pas de meta learning
 	pas de reset de Q-Learning
 	shift sert de gamma
+	attention bounds ont changé
+	beta [0,50]
+	gain [0, 1000]
+	gamma [0,50]
