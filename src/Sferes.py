@@ -19,7 +19,7 @@ import os
 import mmap
 import numpy as np
 from multiprocessing import Pool, Process
-from pylab import *
+#from pylab import *
 import cPickle as pickle
 
 #from fonctions import *

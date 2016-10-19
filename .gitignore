@@ -2,3 +2,5 @@
 *.pickle
 *.pyc
 SFERES_*
+set*
+*.py~
