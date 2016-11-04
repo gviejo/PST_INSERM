@@ -5,7 +5,8 @@
 #include <sstream>
 #include <iterator>
 #include <map>
-#include "call_5_3.cpp"
+// #include "call_5_3.cpp"
+#include "call_6_1.cpp"
 
 using namespace std;
 
@@ -28,7 +29,7 @@ int main () {
 
 	int N =  map_monkeys_length_trial['p'];
 
-	sferes_call(fit, N, "../../../data/data_txt_3_repeat/p", 0.2, 0.2, 0.2, 0.2);
+	sferes_call(fit, N, "../../../data/data_txt_3_repeat/p", 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2);
 
 	std::cout << fit[0] << " " << fit[1] << std::endl;  
    	return 0;

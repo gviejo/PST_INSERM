@@ -67,8 +67,8 @@ void softmax(double *p, double *v, double b) {
 		}
 	}
 }
-double sigmoide(double Hb, double Hf, double n, double i, double t, double g) {		
-	double x = 2.0 * -log2(0.25) - Hb - Hf;
+double sigmoide(double Hb, double Hf, double Hmetab, double Hmetaf, double n, double i, double t, double g) {		
+	double x = 2.0 * -log2(0.25) - Hb - Hf + Hmetab - Hmetaf;
 	// std::cout << pow((n-i),t) <<  std::endl;
 	double tmp = 1.0/(1.0+(pow((n-i),t)*exp(-x*g)));
 	// std::cout << " n=" << n << " i=" << i << "Hb = "<< Hb << ", Hf = " << Hf << " x=" << x << " p(A)=" << tmp << " threshold = " << t << " gain = " << g << std::endl;
@@ -139,7 +139,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	double sigma=0.0+(20.0-0.0)*sigma_;	
 	double gamma=0.0+(100.0-0.0)*gamma_;
 	double kappa=0.0+(1.0-0.0)*kappa_;
-	double shift=0.0+(1.0-0.0)*shift_;
+	double shift=0.0+(0.999999-0.0)*shift_;
 
 	// std::cout << "alpha : " << alpha << std::endl;
 	// std::cout << "beta : " << beta << std::endl;
@@ -211,157 +211,228 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		}
 	data_file2.close();	
 	}		
-	problem = sari[0][1];
-	double p_a [length][n_action];
-	double p_r_a [length][n_action][n_r];				
-	double p [n_action][2];		
-	double values_mf [n_action];	
-	double values_mb [n_action];
-	double tmp [n_action][2];
-	double p_a_r [n_action][2];
-	double reward = 0.0;
-	double p_r [2];
-	int n_element = 0;
-	int s, a, r;		
-	double Hf = 0.0;
-	for (int m=0;m<n_action;m++) {
-		values_mf[m] = 0.0;
-		spatial_biases[m] = 1./n_action;
-	}	
+
+	// REPEAT THE MAIN LOOP TWO times
+	// FIRST TIME COMPUTE MAIN ENTROPY FROM QL ET BWM
+	// SECOND TIME GIVE FIT
+
+	double entropy_ql [nb_trials];
+	double entropy_bwm [nb_trials];
+	double mean_entropy_bwm [30] [2];
+	double mean_entropy_ql [30] [2];
+
+	for (int c=0;c<2;c++) {
 	
-
-	for (int i=0;i<nb_trials;i++) 
-	{								
-		if ((sari[i][4]-sari[i-1][4] < 0.0) && (i>0)) {
-				// START BLOC //
-				problem = sari[i][1];
-				n_element = 0;
-				
-				// RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-				for (int m=0;m<n_action;m++) {					
-					values_mf[m] = 0.0;										
-				}
-			}
-		// }
-		// START TRIAL //
-		// COMPUTE VALUE		
-		a = sari[i][2]-1;		
-		r = sari[i][0];						
-		double Hb = max_entropy;		
+		problem = sari[0][1];
+		double p_a [length][n_action];
+		double p_r_a [length][n_action][n_r];				
+		double p [n_action][2];		
+		double values_mf [n_action];	
+		double values_mb [n_action];
+		double tmp [n_action][2];
+		double p_a_r [n_action][2];
+		double reward = 0.0;
+		double p_r [2];
+		int n_element = 0;
+		int s, a, r;		
+		double Hf = 0.0;
+		int index2 = 0;		
 		for (int m=0;m<n_action;m++) {
-			p[m][0] = 1./(n_action*n_r); 
-			p[m][1] = 1./(n_action*n_r); 
-		}					// fill with uniform
-		softmax(p_a_mf, values_mf, gamma);
-
-		double Hf = 0.0; 
-		for (int n=0;n<n_action;n++){
-			values_mb[n] = 1./n_action;
-			Hf-=p_a_mf[n]*log2(p_a_mf[n]);
-		}
-		int nb_inferences = 0;
-		double p_decision [n_element+1];
-		double p_retrieval [n_element+1];
-		double p_ak [n_element+1];
-		double reaction [n_element+1];
-		double values_net [n_action];
-		double p_a_final [n_action];
-		p_decision[0] = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);		
-		p_retrieval[0] = 1.0-p_decision[0];		
-		fusion(p_a_final, values_mb, values_mf, beta);		
-		p_ak[0] = p_a_final[a];
-		reaction[0] = entropy(p_a_final);
-		for (int k=0;k<n_element;k++) {
-			// INFERENCE				
-			double sum = 0.0;
-			for (int m=0;m<n_action;m++) {
-				for (int o=0;o<n_r;o++) {
-					p[m][o] += (p_a[k][m] * p_r_a[k][m][o]);
-					sum+=p[m][o];
-				}
-			}
-							
-			for (int m=0;m<n_action;m++) {
-				for (int o=0;o<n_r;o++) {
-					tmp[m][o] = (p[m][o]/sum);
-				}
-			}
-
-			nb_inferences+=1;
-			// // EVALUATION
-			sum = 0.0;								
-			for (int o=0;o<n_r;o++) {
-				p_r[o] = 0.0;						
-			}
-			for (int m=0;m<n_action;m++) {
-				for (int o=0;o<n_r;o++) {						
-					p_r[o]+=tmp[m][o];						
-				}
-			}
-			sum = 0.0;
-			for (int m=0;m<n_action;m++) {
-				for (int o=0;o<n_r;o++) {
-					p_a_r[m][o] = tmp[m][o]/p_r[o];
-				}
-				values_mb[m] = p_a_r[m][1]/p_a_r[m][0];
-				sum+=values_mb[m];
-			}
-			for(int m=0;m<n_action;m++) {
-				p_a_mb[m] = values_mb[m]/sum;
-			}			
-			Hb = entropy(p_a_mb);
-			// FUSION
-			fusion(p_a_final, values_mb, values_mf, beta);
-			p_ak[k+1] = p_a_final[a];
-			double N = k+2.0;
-			reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
-		
-			// SIGMOIDE
-			double pA = sigmoide(Hb, Hf, n_element, nb_inferences, threshold, gain);				
-
-			p_decision[k+1] = pA*p_retrieval[k];
-			p_retrieval[k+1] = (1.0-pA)*p_retrieval[k];
+			values_mf[m] = 0.0;		
 		}		
+		for (int i=0;i<nb_trials;i++) 
+		{								
+			if ((sari[i][4]-sari[i-1][4] < 0.0) && (i>0)) {
+					// START BLOC //
+					problem = sari[i][1];
+					n_element = 0;						
+					index2 = 0;
+				}
+			// }
+			// START TRIAL //
+			// COMPUTE VALUE		
+			a = sari[i][2]-1;		
+			r = sari[i][0];
+			double Hb_all [n_element+1];
+			double Hb = max_entropy;	
+			Hb_all[0] = Hb;	
+			for (int m=0;m<n_action;m++) {
+				p[m][0] = 1./(n_action*n_r); 
+				p[m][1] = 1./(n_action*n_r); 
+			}					// fill with uniform
+			softmax(p_a_mf, values_mf, gamma);
 
-		values[i] = log(sum_prod(p_ak, p_decision, n_element+1));
-		double val = sum_prod(p_ak, p_decision, n_element+1);						
-		rt[i] = sum_prod(reaction, p_decision, n_element+1);			
+			double Hf = 0.0; 
+
+			for (int n=0;n<n_action;n++){
+				values_mb[n] = 1./n_action;
+				Hf-=p_a_mf[n]*log2(p_a_mf[n]);
+			}
+			int nb_inferences = 0;
+			double p_decision [n_element+1];
+			double p_retrieval [n_element+1];
+			double p_ak [n_element+1];
+			double reaction [n_element+1];
+			double values_net [n_action];
+			double p_a_final [n_action];
+			double Hmetab = 0;
+			double Hmetaf = 0;
+			if (c == 1) {
+				double Hmetab = mean_entropy_bwm[index2][sari[i][4]];
+				double Hmetaf = mean_entropy_ql [index2][sari[i][4]];			
+			}
+			index2 += 1;
+			p_decision[0] = sigmoide(Hb, Hf, Hmetab, Hmetaf, n_element, nb_inferences, threshold, gain);		
+			p_retrieval[0] = 1.0 - p_decision[0];		
+			fusion(p_a_final, values_mb, values_mf, beta);		
+			p_ak[0] = p_a_final[a];
+			reaction[0] = entropy(p_a_final);
+			for (int k=0;k<n_element;k++) {
+				// INFERENCE				
+				double sum = 0.0;
+				for (int m=0;m<n_action;m++) {
+					for (int o=0;o<n_r;o++) {
+						p[m][o] += (p_a[k][m] * p_r_a[k][m][o]);
+						sum+=p[m][o];
+					}
+				}
+								
+				for (int m=0;m<n_action;m++) {
+					for (int o=0;o<n_r;o++) {
+						tmp[m][o] = (p[m][o]/sum);
+					}
+				}
+
+				nb_inferences+=1;
+				// // EVALUATION
+				sum = 0.0;								
+				for (int o=0;o<n_r;o++) {
+					p_r[o] = 0.0;						
+				}
+				for (int m=0;m<n_action;m++) {
+					for (int o=0;o<n_r;o++) {						
+						p_r[o]+=tmp[m][o];						
+					}
+				}
+				sum = 0.0;
+				for (int m=0;m<n_action;m++) {
+					for (int o=0;o<n_r;o++) {
+						p_a_r[m][o] = tmp[m][o]/p_r[o];
+					}
+					values_mb[m] = p_a_r[m][1]/p_a_r[m][0];
+					sum+=values_mb[m];
+				}
+				for(int m=0;m<n_action;m++) {
+					p_a_mb[m] = values_mb[m]/sum;
+				}			
+				Hb = entropy(p_a_mb);
+				Hb_all[k+1] = Hb;
+				// FUSION
+				fusion(p_a_final, values_mb, values_mf, beta);
+				p_ak[k+1] = p_a_final[a];
+				double N = k+2.0;
+				reaction[k+1] = pow(log2(N), sigma) + entropy(p_a_final);
 			
-		// UPDATE MEMORY 						
-		for (int k=length-1;k>0;k--) {						
-			for (int m=0;m<n_action;m++) {
-				p_a[k][m] = p_a[k-1][m]*(1.0-noise)+noise*(1.0/n_action);
-				for (int o=0;o<n_r;o++) {
-					p_r_a[k][m][o] = p_r_a[k-1][m][o]*(1.0-noise)+noise*0.5;				
+				// SIGMOIDE
+				double pA = sigmoide(Hb, Hf, Hmetab, Hmetaf, n_element, nb_inferences, threshold, gain);		
+
+				p_decision[k+1] = pA*p_retrieval[k];
+				p_retrieval[k+1] = (1.0-pA)*p_retrieval[k];
+			}		
+
+			// FIRST LOOP
+			if (c == 0) {
+				entropy_ql[i] = Hf;
+				entropy_bwm[i] = sum_prod(Hb_all, p_decision, n_element+1);
+			} // SECOND LOOP
+			else if (c == 1) {
+				values[i] = log(sum_prod(p_ak, p_decision, n_element+1));								
+				rt[i] = sum_prod(reaction, p_decision, n_element+1);	
+			}		
+
+
+				
+			// UPDATE MEMORY 						
+			for (int k=length-1;k>0;k--) {						
+				for (int m=0;m<n_action;m++) {
+					p_a[k][m] = p_a[k-1][m]*(1.0-noise)+noise*(1.0/n_action);
+					for (int o=0;o<n_r;o++) {
+						p_r_a[k][m][o] = p_r_a[k-1][m][o]*(1.0-noise)+noise*0.5;				
+					}
 				}
 			}
-		}
 
-		if (n_element < length) n_element+=1;
+			if (n_element < length) n_element+=1;
 
-		for (int m=0;m<n_action;m++) {
-			p_a[0][m] = 1./n_action;
-			for (int o=0;o<n_r;o++) {
-				p_r_a[0][m][o] = 0.5;
+			for (int m=0;m<n_action;m++) {
+				p_a[0][m] = 1./n_action;
+				for (int o=0;o<n_r;o++) {
+					p_r_a[0][m][o] = 0.5;
+				}
 			}
-		}
-		
-		for (int m=0;m<n_action;m++) {
-			p_a[0][m] = 0.0;
-		}		
-		p_a[0][a] = 1.0;		
-		p_r_a[0][a][(r-1)*(r-1)] = 0.0;
-		
-		p_r_a[0][a][r] = 1.0;
+			
+			for (int m=0;m<n_action;m++) {
+				p_a[0][m] = 0.0;
+			}		
+			p_a[0][a] = 1.0;		
+			p_r_a[0][a][(r-1)*(r-1)] = 0.0;
+			
+			p_r_a[0][a][r] = 1.0;
 
-		// // MODEL FREE			
-		if (r == 0) {
-			reward = -1.0;
-		} else if (r == 1) {
-			reward = 1.0;
+			// // MODEL FREE			
+			if (r == 0) {
+				reward = -1.0;
+			} else if (r == 1) {
+				reward = 1.0;
+			}
+			double max_next = 0;
+			for (int m=0;m<n_action;m++) {
+				if (values_mf[m]>max_next) {
+					max_next = values_mf[m];
+				}
+			}
+			double delta = reward + shift*max_next - values_mf[a];
+			values_mf[a]+=(alpha*delta);		
+
+			for (int m=0;m<n_action;m++) {
+				if (m != a) {				
+					values_mf[m] += (1.0-kappa)*(0.0-values_mf[m]);
+				}
+			}
+
 		}
-		double delta = reward - values_mf[a];
-		values_mf[a]+=(alpha*delta);		
+		if (c == 0) {
+			double bwm_count [30] [2];
+			double ql_count [30] [2];
+			int index = 0;
+			// COMPUTE MEAN ENTROPY
+			for (int i=0;i<nb_trials;i++) {	
+				// std::cout << entropy_bwm[i] << " " << entropy_ql[i] << std::endl;										
+				if ((sari[i][4]-sari[i-1][4] != 0.0) && (i > 0)) {					
+					index = 0;				
+				}
+				if (sari[i][4] == 0) {
+					mean_entropy_bwm[index][0] += entropy_bwm[i];
+					mean_entropy_ql[index][0] += entropy_ql[i];					
+					bwm_count[index][0] += 1.0;
+					ql_count[index][0] += 1.0;
+					// std::cout << "yo " << index << " " << mean_entropy_bwm[index][0] << " " << bwm_count[index][0] << std::endl;
+				} else {
+					mean_entropy_bwm[index][1] += entropy_bwm[i];
+					mean_entropy_ql[index][1] += entropy_ql[i];					
+					bwm_count[index][1] += 1.0;
+					ql_count[index][1] += 1.0;					
+				}
+				index += 1;				
+			}
+			for (int j = 0; j< 30; j++) {				
+					mean_entropy_bwm[j][0] = mean_entropy_bwm[j][0]/bwm_count[j][0];
+					mean_entropy_ql [j][0] = mean_entropy_ql [j][0]/ql_count [j][0];
+					mean_entropy_bwm[j][1] = mean_entropy_bwm[j][1]/bwm_count[j][1];
+					mean_entropy_ql [j][1] = mean_entropy_ql [j][1]/ql_count [j][1];										
+
+			}
+		}		
 	}
 
 	// ALIGN TO MEDIAN
