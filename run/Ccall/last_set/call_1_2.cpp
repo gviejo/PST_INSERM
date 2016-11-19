@@ -72,7 +72,7 @@ double entropy(double *p) {
 	for (int i=0;i<4;i++) {tmp+=p[i]*log2(p[i]);}
 	return -tmp;
 }
-void sferes_call(double * fit, const int N, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double weight_, double threshold_, double sigma_, double kappa_, double shift_)
+void sferes_call(double * fit, const int N, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double weight_, double threshold_, double sigma_, double kappa_, double shift_, double xi_)
 {
 	///////////////////
 	double max_entropy = -log2(0.25);
