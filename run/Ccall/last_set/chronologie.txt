@@ -1,0 +1,29 @@
+# Chronologie set pst
+
+call_set_model.cpp
+model 1 : fusion
+model 2 : mixture
+model 3 : bayesian
+model 4 : qlearning
+
+
+Set 1:
+	Premiere version
+	model 1,2,3,4,5
+Set 2: 
+	Generalized q-learning
+	model 1,2,4
+	kappa:
+Set 3:
+	Gamma
+Set 4:
+	Pas de réiniti
+Set 5:
+	anticipation
+Set 6:
+	H moyen
+	x = (Hmax - Hwm - Hql + Hmetawm - Hmetaql).
+	model 1
+
+Set 7:
+	delta seuil
