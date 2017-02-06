@@ -17,8 +17,8 @@ sys.path.append("../../src")
 
 from Models import *
 
-#from matplotlib import *
-#from pylab import *
+from matplotlib import *
+from pylab import *
 
 from Sferes import pareto
 from itertools import *
@@ -69,8 +69,10 @@ data = {}
 pareto = {}
 pareto2 = {}
 pareto3 = {}
+pareto4 = {}
 p_test = {}
 p_test2 = {}
+p_test_v1 = {}
 tche = {}
 indd = {}
 position = {}
@@ -120,14 +122,17 @@ for s in monkeys: # singe
 			for pair in tmp[1:]:
 				if pair[4] >= pareto_frontier[-1][4]:
 					pareto_frontier.append(pair)
+# pareto = run | gen | num | fit1 | fit2				
 			pareto[s][p][id_to_models[m]] = np.array(pareto_frontier)
 			pareto[s][p][id_to_models[m]][:,3] = pareto[s][p][id_to_models[m]][:,3] - 50000.0
 			pareto[s][p][id_to_models[m]][:,4] = pareto[s][p][id_to_models[m]][:,4] - 50000.0            
 			# bic
 			pareto[s][p][id_to_models[m]][:,3] = 2*pareto[s][p][id_to_models[m]][:,3] - float(len(p_order[id_to_models[m]]))*np.log(front.N[s])
+
 			best_bic = 2*best_log[s] - float(len(p_order[id_to_models[m]]))*np.log(front.N[s])
 			worst_bic = 2*worst_log[s] - float(len(p_order[id_to_models[m]]))*np.log(front.N[s])                    
-			pareto[s][p][id_to_models[m]][:,3] = (pareto[s][p][id_to_models[m]][:,3]-worst_bic)/(best_bic-worst_bic)			
+			pareto[s][p][id_to_models[m]][:,3] = (pareto[s][p][id_to_models[m]][:,3]-worst_bic)/(best_bic-worst_bic)	
+
 			# rt
 			if s == 'p':
 				pareto[s][p][id_to_models[m]][:,4] = 1.0 - ((-pareto[s][p][id_to_models[m]][:,4])/(8.0*np.power(2.0*front.rt_reg_monkeys[s][:,1], 2).sum()))
@@ -137,6 +142,7 @@ for s in monkeys: # singe
 # --------------------------------------
 # MIXED PARETO FRONTIER between sets
 # --------------------------------------
+# pareto2 =   set | run | gen | num | fit1 | fit2				
 	for m in id_to_models.iterkeys():
 		tmp = {}	
 		# for p in set_to_models.iterkeys():
@@ -157,6 +163,7 @@ for s in monkeys: # singe
 # -------------------------------------
 # MIXED PARETO FRONTIER between models
 # ------------------------------------
+# pareto3 = model | set | run | gen | num | fit1 | fit2		
 	tmp = []
 	for m in pareto2[s].iterkeys():		
 		tmp.append(np.hstack((np.ones((len(pareto2[s][m]),1))*models_to_id[m], pareto2[s][m][:,0:6])))            	
@@ -169,8 +176,7 @@ for s in monkeys: # singe
 			if pair[6] >= pareto3[s][-1][6]:
 				pareto3[s].append(pair)
 		pareto3[s] = np.array(pareto3[s])            	
-# pareto2 =   set | run | gen | num | fit1 | fit2				
-# pareto3 = model | set | run | gen | num | fit1 | fit2		
+
 # -------------------------------------
 # TCHEBYTCHEV
 # -------------------------------------	
@@ -228,16 +234,67 @@ for s in monkeys: # singe
 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
 	p_test2[s+str(set_)] = dict({m:dict(zip(p_order[m],tmp[4:]))})
 	
-	
-# SAVING IN DROPBOX
-with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/pareto2.pickle", 'wb') as f:
-	pickle.dump(pareto2, f)
-with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/pareto3.pickle", 'wb') as f:
-	pickle.dump(pareto3, f)
-with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/position.pickle", 'wb') as f:
-	pickle.dump(position, f)
+# -------------------------------------
+# PARETO SET 1
+# -------------------------------------
+# pareto4 = model | run | gen | ind |
+	tmp = []
+	for m in pareto[s][1].iterkeys():
+		tmp.append(np.hstack((np.ones((len(pareto[s][1][m]),1))*models_to_id[m], pareto[s][1][m][:,0:5])))            	
+	tmp = np.vstack(tmp)
+	tmp = tmp[tmp[:,4].argsort()][::-1]
+	if len(tmp):
+		pareto4[s] = []
+		pareto4[s] = [tmp[0]]
+		for pair in tmp[1:]:
+			if pair[5] >= pareto4[s][-1][5]:
+				pareto4[s].append(pair)
+		pareto4[s] = np.array(pareto4[s])
 
-with open("p_test_last_set.pickle", 'wb') as f:
-	pickle.dump(p_test, f)
-with open("p_test2_last_set.pickle", 'wb') as f:
-	pickle.dump(p_test2, f)
+# ------------------------------------
+# TCHEBYTCHEV SET 1
+# ------------------------------------
+	tmp = pareto4[s][:,4:]
+	positif = (tmp[:,0]>0)*(tmp[:,1]>0)
+	tpm = tmp[positif]
+	ideal = np.max(tmp[:,0:2], 0)
+	nadir = np.min(tmp[:,0:2], 0)
+	value = 0.5*((ideal-tmp)/(ideal-nadir))
+	value = np.max(value, 1)+0.001*np.sum(value,1)
+	ind_best_point = np.argmin(value)
+	# Saving best individual
+	best_ind = pareto4[s][ind_best_point]
+	m = id_to_models[int(best_ind[0])]
+	run_ = int(best_ind[1])
+	gen_ = int(best_ind[2])
+	num_ = int(best_ind[3])
+	data_run = data[s][1][m][run_]
+	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+	p_test_v1[s] = {'best_tche':dict({m:dict(zip(p_order[m],tmp[4:]))})}                        
+
+# ------------------------------------
+# BEST CHOICE & RT SET 1
+# ------------------------------------
+	tmp = {}
+	for m in models_to_id.keys():
+		bic_ = pareto[s][1][m][0,3]*(best_bic-worst_bic)+worst_bic
+		tmp[m+"_"+str(bic_)] = dict(zip(p_order[m],pareto[s][1][m][0,5:]))
+	p_test_v1[s]['best_choice'] = tmp	
+	
+
+# # SAVING IN ../papier/	
+with open("../papier/p_test_v1.pickle",'wb') as f:
+   ...:     pickle.dump(p_test_v1.pickle, f)
+
+# # SAVING IN DROPBOX
+# with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/pareto2.pickle", 'wb') as f:
+# 	pickle.dump(pareto2, f)
+# with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/pareto3.pickle", 'wb') as f:
+# 	pickle.dump(pareto3, f)
+# with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/position.pickle", 'wb') as f:
+# 	pickle.dump(position, f)
+
+# with open("p_test_last_set.pickle", 'wb') as f:
+# 	pickle.dump(p_test, f)
+# with open("p_test2_last_set.pickle", 'wb') as f:
+# 	pickle.dump(p_test2, f)
