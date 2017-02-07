@@ -284,7 +284,7 @@ for s in monkeys: # singe
 
 # # SAVING IN ../papier/	
 with open("../papier/p_test_v1.pickle",'wb') as f:
-   ...:     pickle.dump(p_test_v1.pickle, f)
+	pickle.dump(p_test_v1, f)
 
 # # SAVING IN DROPBOX
 # with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/pareto2.pickle", 'wb') as f:

@@ -67,6 +67,7 @@ for s in monkeys.keys():
 	data[s][:,6] = center(data[s][:,6])
 	performance_monkeys[s] = []
 	time_monkeys[s] = {i:[] for i in xrange(1,6)}
+	time_models[s] = {i:[] for i in xrange(1,6)}
 	problems_sar = []
 	tmp = [[1, data[s][0,4]-1,data[s][0,5]-1,data[s][0,3]]]	
 	count = 0	
@@ -78,7 +79,7 @@ for s in monkeys.keys():
 		if data[s][i-1,1] != data[s][i,1] or int(data[s][i,2]) == 0 and int(data[s][i-1,2]) == 1: # new problem 		
 			# Check if the last problem have repeat phase
 			tmp = np.array(tmp)
-			if tmp[:,3].sum()>=1 and i - count > 1:
+			if tmp[:,3].sum()>=1 and i - count > 1 and len(tmp4) > len(tmp):
 				problems_sar += list(tmp)				
 				performance_monkeys[s].append(tmp3)
 				time_monkeys[s][len(tmp4[0:-3])].append(tmp4)
@@ -88,16 +89,16 @@ for s in monkeys.keys():
 			tmp = [[1, data[s][i,4]-1,data[s][i,5]-1,data[s][i,3]]]						
 			tmp4 = [data[s][i,6]]
 			count = i 
-			# print i, "problem"
+			# print i, data[s][i,0], "problem"
 		else :
 			if int(data[s][i,2]) == 0 and int(data[s][i-1,2]) == 0: # search phase				
 				tmp.append([0, data[s][i,4]-1,data[s][i,5]-1,data[s][i,3]])
 				tmp4.append(data[s][i,6])
-				# print i, "seach"
+				# print i, data[s][i,0], "seach"
 			elif int(data[s][i,2]) == 1 and int(data[s][i-1,2]) == 0:# repeat phase					
 				tmp3 = data[s][i:i+3,3]
 				tmp4+=list(data[s][i:i+3,6])				
-				# print i, "repeat"
+				# print i, data[s][i,0], "repeat"
 		
 		if len(performance_monkeys[s]):
 			if len(performance_monkeys[s][-1]) != 3:
@@ -125,49 +126,57 @@ for s in monkeys.keys():
 
 	########################################	
 	length_problems_count = np.array(length_problems_count)
+	# centering rt from models
+	for k in xrange(len(model.timing)): # repeat
+		tmp = []
+		for i in xrange(len(length_problems_count)):
+			tmp.append(model.timing[k][i,0:length_problems_count[i]+3]) # blocs
+		tmp = np.hstack(np.array(tmp))
+		model.timing[k] = model.timing[k] - np.median(tmp)
+		model.timing[k] = model.timing[k] / (np.percentile(tmp, 75) - np.percentile(tmp, 25))
 	tmp = {}
 	tmp2 = {}
 	for i in np.unique(length_problems_count):
+		# monkey
 		index = length_problems_count == i
 		tmp[i] = np.array([np.mean(performance_monkeys[s][index], 0),
 							np.var(performance_monkeys[s][index], 0)])
 		tmp2[i] = np.array([performance_models[s][:,index,:].reshape(len(performance_models[s])*index.sum(),3).mean(0),
 							performance_models[s][:,index,:].reshape(len(performance_models[s])*index.sum(),3).var(0)])
 
-		time_monkeys[s][i] = np.mean(time_monkeys[s][i], 0)
+		time_monkeys[s][i] = np.array([np.mean(time_monkeys[s][i], 0),
+										np.var(time_monkeys[s][i], 0)])
+		time_models[s][i] = np.array([np.mean(model.timing[:,index,0:i+3].reshape(len(model.timing)*index.sum(),i+3), 0),
+										np.var(model.timing[:,index,0:i+3].reshape(len(model.timing)*index.sum(),i+3), 0)])
 
 	performance_models[s] = tmp2
 	performance_monkeys[s] = tmp
 
-	# centering rt from models
-	for k in xrange(len(model.timing)): # repeat
-		tmp = []
-		for i in xrange(len(length_problems_count)):
-			tmp.append(model.timing[k][0:length_problems_count[i]+3]) # blocs
 
-	sys.exit()
+	
+
+
+
 
 
 figure(figsize = (15,10))
 count = 1
 for s in monkeys.keys():
-	subplot(5,1,count)
+	subplot(5,2,count)
 	xpos = []
 	for t in range(1,6):		
 		x = np.arange(3) + (t-1)*2.4
-		fill_between(x, performance_monkeys[s][t][0],
-						performance_monkeys[s][t][0]-performance_monkeys[s][t][1],
+		plot(x, performance_monkeys[s][t][0], 'o--', color = 'black', linewidth = 2)
+		fill_between(x, performance_monkeys[s][t][0]-performance_monkeys[s][t][1],
 						performance_monkeys[s][t][0]+performance_monkeys[s][t][1],
-						 'o--',
 						 linewidth = 0, 
 						 edgecolor = None,
 						 facecolor = 'black',
 						 alpha = 0.5,
 						 visible = True)						 
-		fill_between(x, performance_models[s][t][0],
-						performance_models[s][t][0]-performance_models[s][t][1],
+		plot(x, performance_models[s][t][0], 'o-', color = colors_m[best_model[s]])
+		fill_between(x, performance_models[s][t][0]-performance_models[s][t][1],
 						performance_models[s][t][0]+performance_models[s][t][1],
-						'o-', 
 						linewidth = 0, 
 						edgecolor = None,
 						facecolor = colors_m[best_model[s]], 
@@ -182,9 +191,40 @@ for s in monkeys.keys():
 	grid()
 	legend()
 
+	subplot(5,2,count)
+	xpos = [-1]
+	for t in xrange(1,6):		
+		x = np.arange(xpos[-1]+1, xpos[-1]+1+t+3)
+		plot(x, time_monkeys[s][t][0], 'o--', color = 'black', linewidth =2)
+		fill_between(x, time_monkeys[s][t][0]-time_monkeys[s][t][1],
+						time_monkeys[s][t][0]+time_monkeys[s][t][1],						
+						linewidth = 0, 
+						edgecolor = None,
+						facecolor = 'black',
+						alpha = 0.5)						 
+		plot(x, time_models[s][t][0], 'o-', color = colors_m[best_model[s]], linewidth = 2)
+		fill_between(x, time_models[s][t][0]-time_models[s][t][1],
+						time_models[s][t][0]+time_models[s][t][1],						
+						linewidth = 0, 
+						edgecolor = None,
+						facecolor = colors_m[best_model[s]], 
+						alpha = 0.5)
+		xpos.append(x[-1])
+	xticks(xpos, tuple([str(i)+" errors" for i in xrange(5)]))	
+	locator_params(axis='y',nbins=3)
+	title("Monkey "+s)	
+	if count == 3:
+		ylabel("Performances in repetition (%)", size = 20, labelpad = 30)
+	count += 1	
+	grid()
+	legend()	
+
+
 line2 = tuple([Line2D(range(1),range(1), linestyle = style[m], alpha=1.0, color=colors_m[m], linewidth = 4) for m in ['fusion', 'mixture', 'monkeys']])
 legend(line2,tuple(['Entropy-based coordination', 'Weight-based mixture', 'Monkey']), loc = 'upper center', bbox_to_anchor = (0.5, 6.25), fancybox = True, shadow = True, ncol = 3)
-savefig("fig2_bic_choice.pdf", dpi = 900, facecolor = 'white', bbox_inches = 'tight')
+savefig("fig2_choice_rt_v1_tche.pdf", dpi = 900, facecolor = 'white', bbox_inches = 'tight')
+
+os.system("evince fig2_choice_rt_v1_tche.pdf")
 
 
 

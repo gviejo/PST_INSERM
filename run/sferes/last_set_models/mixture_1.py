@@ -221,8 +221,8 @@ class mixture_1():
 		self.parameters = parameters
 		self.list_of_problems = list_of_problems
 		self.N = len(self.list_of_problems)
-		self.performance = np.zeros((nb_repeat, self.list_of_problems[:,0].sum(), 3))
-		self.timing = np.zeros((nb_repeat, self.list_of_problems[:,0].sum(), 5+3))
+		self.performance = np.zeros((nb_repeat, int(self.list_of_problems[:,0].sum()), 3))
+		self.timing = np.zeros((nb_repeat, int(self.list_of_problems[:,0].sum()), 5+3))
 
 		for k in xrange(nb_repeat):
 			self.problem = self.list_of_problems[0,1]
@@ -249,7 +249,7 @@ class mixture_1():
 					counter = 0
 
 				# START TRIAL
-				self.current_action = self.list_of_problems[i,2]
+				self.current_action = int(self.list_of_problems[i,2])
 				r = self.list_of_problems[i,3]
 
 				# SEARCH PHASE			
@@ -269,7 +269,7 @@ class mixture_1():
 				self.value[i] = float(np.log(self.p_a_final[self.current_action]))             
 				H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
 				self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)            
-				self.timing[k,self.list_of_problems[0:i,0].sum()-1,counter] = self.reaction[i]
+				self.timing[k,int(self.list_of_problems[0:i,0].sum()-1),counter] = self.reaction[i]
 
 				self.updateValue(r)		
 
@@ -290,7 +290,7 @@ class mixture_1():
 							self.evaluationModule()                    
 
 						self.fusionModule()
-						self.current_action = self.sample(self.p_a_final)	            
+						self.current_action = int(self.sample(self.p_a_final))
 						if self.current_action == self.problem:
 							r = 1
 						# print "repeat", self.problem, self.current_action, r
@@ -298,8 +298,8 @@ class mixture_1():
 						rt = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)	            	            
 						self.updateValue(r)	        	
 				
-						self.performance[k,self.list_of_problems[0:i,0].sum()-1,j] = r						
-						self.timing[k,self.list_of_problems[0:i,0].sum()-1,counter+j] = float(((np.log2(N))**self.parameters['sigma'])+H)                
+						self.performance[k,int(self.list_of_problems[0:i,0].sum()-1),j] = r						
+						self.timing[k,int(self.list_of_problems[0:i,0].sum()-1),counter+j] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)  
 					
 					
 
