@@ -1,6 +1,7 @@
 
 import numpy as np 
 from pylab import *
+import matplotlib.gridspec as gridspec
 import cPickle as pickle
 import sys, os
 sys.path.append("../sferes/last_set_models/")
@@ -159,72 +160,96 @@ for s in monkeys.keys():
 
 
 
-figure(figsize = (15,10))
+
+
+
+
+
+
+
+
+
+
+# THE PLOT FOR PERFORMANCES = SEARCH + REPEAT IS ALREADY MADE
+
+figure(figsize = (13,12)) # width | height
+subplots_adjust(hspace = 0.15, wspace = 0.1)
+outer = gridspec.GridSpec(3, 2) 
 count = 1
+alpha = 0.2
 for s in monkeys.keys():
-	subplot(5,2,count)
-	xpos = []
+	gs = gridspec.GridSpecFromSubplotSpec(2,1,subplot_spec = outer[monkeys.keys().index(s)], hspace = 0.18)
+	ax = subplot(gs[0])
+	ax.spines['right'].set_visible(False)
+	ax.spines['top'].set_visible(False)	
+	ax.yaxis.set_ticks_position('left')
+	ax.xaxis.set_ticks_position('bottom')
+	xpos = [-1]
+	xtick_pos = []
+	print count
 	for t in range(1,6):		
-		x = np.arange(3) + (t-1)*2.4
-		plot(x, performance_monkeys[s][t][0], 'o--', color = 'black', linewidth = 2)
-		fill_between(x, performance_monkeys[s][t][0]-performance_monkeys[s][t][1],
+		x = np.arange(xpos[-1]+1, xpos[-1]+1+t+3)
+		plot(x[-3:], performance_monkeys[s][t][0], 'o--', color = 'black', linewidth = 2)
+		fill_between(x[-3:], performance_monkeys[s][t][0]-performance_monkeys[s][t][1],
 						performance_monkeys[s][t][0]+performance_monkeys[s][t][1],
 						 linewidth = 0, 
 						 edgecolor = None,
 						 facecolor = 'black',
-						 alpha = 0.5,
+						 alpha = alpha,
 						 visible = True)						 
-		plot(x, performance_models[s][t][0], 'o-', color = colors_m[best_model[s]])
-		fill_between(x, performance_models[s][t][0]-performance_models[s][t][1],
+		plot(x[-3:], performance_models[s][t][0], 'o-', color = colors_m[best_model[s]])
+		fill_between(x[-3:], performance_models[s][t][0]-performance_models[s][t][1],
 						performance_models[s][t][0]+performance_models[s][t][1],
 						linewidth = 0, 
 						edgecolor = None,
 						facecolor = colors_m[best_model[s]], 
-						alpha = 0.5)
-		xpos.append(x[1])
-	xticks(xpos, tuple([str(i)+" errors" for i in xrange(5)]))	
+						alpha = alpha)		
+		axvline(x[-3]-0.5, color = 'black', alpha = 0.5)
+		xpos.append(x[-1])
+		xtick_pos.append(x[-3]-0.5)
+	
+	xticks(xtick_pos, tuple([str(i)+" Err" for i in xrange(5)]))	
 	locator_params(axis='y',nbins=3)
-	title("Monkey "+s)	
-	if count == 3:
-		ylabel("Performances in repetition (%)", size = 20, labelpad = 30)
-	count += 1	
-	grid()
-	legend()
-
-	subplot(5,2,count)
+	xlim(-2,30)	
+	if count%2: ylabel("Accuracy")		
+	annotate('Monkey '+s, (0.8,0.1), textcoords= 'axes fraction', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round'))
+	
+	ax = subplot(gs[1])
+	ax.spines['right'].set_visible(False)
+	ax.spines['bottom'].set_visible(False)
+	ax.yaxis.set_ticks_position('left')
+	ax.xaxis.set_ticks_position('top')	
 	xpos = [-1]
-	for t in xrange(1,6):		
+	for t in xrange(1,6):				
 		x = np.arange(xpos[-1]+1, xpos[-1]+1+t+3)
-		plot(x, time_monkeys[s][t][0], 'o--', color = 'black', linewidth =2)
+		plot(x, time_monkeys[s][t][0], 's--', color = 'black', linewidth =2)
 		fill_between(x, time_monkeys[s][t][0]-time_monkeys[s][t][1],
 						time_monkeys[s][t][0]+time_monkeys[s][t][1],						
 						linewidth = 0, 
 						edgecolor = None,
 						facecolor = 'black',
-						alpha = 0.5)						 
-		plot(x, time_models[s][t][0], 'o-', color = colors_m[best_model[s]], linewidth = 2)
+						alpha = alpha)	 
+		plot(x, time_models[s][t][0], 's-', color = colors_m[best_model[s]], linewidth = 2)
 		fill_between(x, time_models[s][t][0]-time_models[s][t][1],
 						time_models[s][t][0]+time_models[s][t][1],						
 						linewidth = 0, 
 						edgecolor = None,
 						facecolor = colors_m[best_model[s]], 
-						alpha = 0.5)
+						alpha = alpha)
 		xpos.append(x[-1])
-	xticks(xpos, tuple([str(i)+" errors" for i in xrange(5)]))	
-	locator_params(axis='y',nbins=3)
-	title("Monkey "+s)	
-	if count == 3:
-		ylabel("Performances in repetition (%)", size = 20, labelpad = 30)
-	count += 1	
-	grid()
-	legend()	
-
-
+		axvline(x[-3]-0.5, color = 'black', alpha = alpha)		
+	xlim(-2,30)	
+	xticks((), ())	
+	locator_params(axis='y',nbins=3)	
+	if count%2: ylabel("RT")
+	count = count + 1 if count%2 else count + 3
+	
 line2 = tuple([Line2D(range(1),range(1), linestyle = style[m], alpha=1.0, color=colors_m[m], linewidth = 4) for m in ['fusion', 'mixture', 'monkeys']])
-legend(line2,tuple(['Entropy-based coordination', 'Weight-based mixture', 'Monkey']), loc = 'upper center', bbox_to_anchor = (0.5, 6.25), fancybox = True, shadow = True, ncol = 3)
-savefig("fig2_choice_rt_v1_tche.pdf", dpi = 900, facecolor = 'white', bbox_inches = 'tight')
+legend(line2,tuple(['Entropy-based coordination', 'Weight-based mixture', 'Monkey']), bbox_to_anchor = (2.0, 2.0), fancybox = True, shadow = True)
 
-os.system("evince fig2_choice_rt_v1_tche.pdf")
+savefig("fig3_choice_rt_v1_tche.pdf", dpi = 600, facecolor = 'white', bbox_inches = 'tight')
+
+# os.system("evince fig3_choice_rt_v1_tche.pdf")
 
 
 
