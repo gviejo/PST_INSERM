@@ -219,14 +219,13 @@ class mixture_1():
 
 	def test_call(self, nb_repeat, list_of_problems, parameters):        
 		self.parameters = parameters
-		self.list_of_problems = list_of_problems
+		self.list_of_problems = list_of_problems[list_of_problems[:,0] == 1,1]
 		self.N = len(self.list_of_problems)
-		self.performance = np.zeros((nb_repeat, int(self.list_of_problems[:,0].sum()), 3))
-		self.timing = np.zeros((nb_repeat, int(self.list_of_problems[:,0].sum()), 5+3))
+		self.performance = np.zeros((nb_repeat, len(self.list_of_problems), 3))
+		self.timing = {i:[] for i in xrange(1, 20)}
+		self.length = np.zeros((nb_repeat, len(self.list_of_problems)))
 
 		for k in xrange(nb_repeat):
-			self.problem = self.list_of_problems[0,1]
-			r = 0.0
 			self.value = np.zeros(self.N)
 			self.reaction = np.zeros(self.N)
 			self.values_mf =  np.zeros(self.n_action)
@@ -239,69 +238,65 @@ class mixture_1():
 			self.p_a_final = np.zeros(self.n_action)
 			self.w = self.parameters['weight']
 
-			for i in xrange(self.N):
-				if self.list_of_problems[i,0]:
+			for i in xrange(self.N):				
 				# START BLOC
-					self.n_element = 0
-					self.values_mf = np.zeros(self.n_action)
-					self.w = self.parameters['weight']
-					self.problem = self.list_of_problems[i,1]		
-					counter = 0
+				self.problem = self.list_of_problems[i]
+				self.n_element = 0
+				self.values_mf = np.zeros(self.n_action)
+				self.w = self.parameters['weight']							
+				r = 0
+				tmp = [] # for saving rt timing in the search phase
 
-				# START TRIAL
-				self.current_action = int(self.list_of_problems[i,2])
-				r = self.list_of_problems[i,3]
+				# SEARCH PHASE
+				while r == 0:								
+					# SEARCH PHASE			
+					self.Hb = self.max_entropy        
+					self.p_a_final = np.zeros(self.n_action)					
+					# BAYESIAN CALL
+					self.p = self.uniform[:,:]
+					self.Hb = self.max_entropy
+					self.nb_inferences = 0  
+					self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
 
-				# SEARCH PHASE			
-				self.Hb = self.max_entropy        
-				self.p_a_final = np.zeros(self.n_action)					
-				# BAYESIAN CALL
-				self.p = self.uniform[:,:]
-				self.Hb = self.max_entropy
-				self.nb_inferences = 0  
-				self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+					while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
+						self.inferenceModule()
+						self.evaluationModule()                    
 
-				while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
-					self.inferenceModule()
-					self.evaluationModule()                    
-
-				self.fusionModule()
-				self.value[i] = float(np.log(self.p_a_final[self.current_action]))             
-				H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-				self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)            
-				self.timing[k,int(self.list_of_problems[0:i,0].sum()-1),counter] = self.reaction[i]
-
-				self.updateValue(r)		
-
-				counter += 1	
-
-				if int(self.list_of_problems[i,3]) == 1:					
-					# REPEAT PHASE					
-					for j in xrange(3):
-						r = 0
-						#BAYESIAN CALL
-						self.p = self.uniform[:,:]
-						self.Hb = self.max_entropy
-						self.nb_inferences = 0  
-						self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
-
-						while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
-							self.inferenceModule()
-							self.evaluationModule()                    
-
-						self.fusionModule()
-						self.current_action = int(self.sample(self.p_a_final))
-						if self.current_action == self.problem:
-							r = 1
-						# print "repeat", self.problem, self.current_action, r
-						H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-						rt = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)	            	            
-						self.updateValue(r)	        	
+					self.fusionModule()
+					H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
+					# self.value[i] = float(np.log(self.p_a_final[self.current_action]))             					
+					# self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)            
+					self.current_action = int(self.sample(self.p_a_final))
+					r = 1 if self.current_action == self.problem else 0
+					tmp.append(float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H))
+					self.updateValue(r)							
 				
-						self.performance[k,int(self.list_of_problems[0:i,0].sum()-1),j] = r						
-						self.timing[k,int(self.list_of_problems[0:i,0].sum()-1),counter+j] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)  
-					
-					
+				# REPEAT PHASE					
+				for j in xrange(3):
+					r = 0
+					#BAYESIAN CALL
+					self.p = self.uniform[:,:]
+					self.Hb = self.max_entropy
+					self.nb_inferences = 0  
+					self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+
+					while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
+						self.inferenceModule()
+						self.evaluationModule()                    
+
+					self.fusionModule()
+					self.current_action = int(self.sample(self.p_a_final))
+					r = 1 if self.current_action == self.problem else 0						
+					H = -(self.p_a_final*np.log2(self.p_a_final)).sum()					
+					self.updateValue(r)	        				
+					self.performance[k,i,j] = r
+					tmp.append(float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H))					
+				
+				self.timing[len(tmp)-3].append(tmp)
+				self.length[k,i] = len(tmp)-3
+		for k in self.timing.iterkeys():
+			self.timing[k] = np.array(self.timing[k])
+									
 
 
 	def sample(self, values):

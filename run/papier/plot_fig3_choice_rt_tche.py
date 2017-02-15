@@ -60,7 +60,8 @@ performance_models = {}
 time_monkeys = {}
 time_models = {}
 best_model = {}
-
+length_monkeys = {}
+length_models = {}
 
 for s in monkeys.keys():
 	# MONKEYS PERFORMANCE AND REACTION TIME
@@ -110,14 +111,39 @@ for s in monkeys.keys():
 	problems_sar = np.array(problems_sar)
 	for k in time_monkeys[s].keys():
 		time_monkeys[s][k] = np.array(time_monkeys[s][k])
-	
+	tmp = {}
+	for i in np.unique(length_problems_count):
+		index = length_problems_count == i
+		tmp[i] = np.array([np.mean(performance_monkeys[s][index], 0),
+							np.var(performance_monkeys[s][index], 0)])
+	performance_monkeys[s] = tmp
+	length_monkeys[s] = np.array([np.sum(length_problems_count==i) for i in xrange(1, 20)]).astype('float')
+	length_monkeys[s] = length_monkeys[s]/np.sum(length_monkeys[s])	
+
+	####################################################################################
 	# MODELS PERFORMANCE AND REACTION TIMES
-	
+	problems_sar = np.array(problems_sar)	
 	m = p_test_v1[s]['best_tche'].keys()[0]
 	model = models[m][1]
 	best_model[s] = m
 	model.test_call(2, problems_sar, p_test_v1[s]['best_tche'][m])
 	performance_models[s] = np.array(model.performance)
+	tmp2 = {int(i):[] for i in np.unique(model.length)}
+	for i in xrange(performance_models[s].shape[0]):		
+		for j in np.unique(model.length[i]):
+			index = model.length[i] == int(j)
+			tmp2[int(j)].append(model.performance[i,index])
+			# tmp2[i].append() = np.array([performance_models[s][:,index,:].reshape(len(performance_models[s])*index.sum(),3).mean(0),
+			# 					performance_models[s][:,index,:].reshape(len(performance_models[s])*index.sum(),3).var(0)])
+	for i in tmp2.iterkeys():
+		tmp2[i] = np.vstack(tmp2[i])
+		tmp2[i] = np.array([np.mean(tmp2[i], 0),
+							np.var(tmp2[i], 0)])
+	performance_models[s] = tmp2
+	length_models[s] = np.array([np.sum(model.length==i) for i in xrange(1, 20)]).astype('float')
+	length_models[s] = length_models[s]/np.sum(length_models[s])
+
+	sys.exit()
 	
 	
 	########################################
