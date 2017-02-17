@@ -49,24 +49,18 @@ class fusion_1():
 		self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
 		self.problem = self.sari[0,1]
 		self.p_a_final = np.zeros(self.n_action)
-		self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
+		# self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
 		for i in xrange(self.N):                    
 			if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
 					# START BLOC
 					self.problem = self.sari[i][1]
 					self.n_element = 0
 					# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-					self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-					# shift bias
-					tmp = self.values_mf[self.current_action]
-					self.values_mf *= self.parameters['shift']/3.
-					self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-					# spatial biaises update
-					self.spatial_biases[self.sari[i,2]-1] += 1.0
+					self.values_mf = np.zeros(4)					
 
 
 			# START TRIAL
-			self.current_action = self.sari[i][2]-1
+			self.current_action = int(self.sari[i][2]-1)
 			r = self.sari[i][0]            
 
 			self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
@@ -95,8 +89,7 @@ class fusion_1():
 			reaction[0] = float(H)        
 			for j in xrange(self.n_element):            
 				self.inferenceModule()
-				self.evaluationModule()
-				# print "mf = ", self.values_mf
+				self.evaluationModule()				
 				self.fusionModule()                
 				self.p_ak[j+1] = self.p_a_final[self.current_action]                
 				H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
@@ -118,6 +111,7 @@ class fusion_1():
 			self.updateValue(r)
 
 		# ALIGN TO MEDIAN
+		self.rt_align = np.array([np.median(self.reaction), np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25)])
 		self.reaction = self.reaction - np.median(self.reaction)
 		self.reaction = self.reaction / (np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25))        
 		# LEAST SQUARES            

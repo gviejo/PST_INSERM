@@ -212,6 +212,11 @@ for s in monkeys: # singe
 	position[s+str(set_)] = best_ind[5:]
 
 # ------------------------------------
+# SELECTION BY TESTING PARAMETERS
+# ------------------------------------
+	# must call testing files
+
+# ------------------------------------
 # BEST RT
 # ------------------------------------
 	index = (pareto3[s][:,5] > 0)*(pareto3[s][:,6] > 0)
@@ -285,6 +290,8 @@ for s in monkeys: # singe
 # # SAVING IN ../papier/	
 with open("../papier/p_test_v1.pickle",'wb') as f:
 	pickle.dump(p_test_v1, f)
+with open("../papier/p_test_all_v.pickle", 'wb') as f:
+	pickle.dump(p_test)
 
 # # SAVING IN DROPBOX
 # with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/pareto2.pickle", 'wb') as f:

@@ -55,18 +55,19 @@ class mixture_1():
 					self.problem = self.sari[i][1]
 					self.n_element = 0
 					self.w = self.parameters['weight']
+					self.values_mf = np.zeros(4)
 					# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
 					# print "biais", self.spatial_biases
-					self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-					# shift bias
-					tmp = self.values_mf[self.current_action]
-					self.values_mf *= self.parameters['shift']/3.
-					self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-					# spatial biaises
-					self.spatial_biases[self.sari[i,2]-1] += 1.0
+					# self.values_mf = self.spatial_biases/self.spatial_biases.sum()
+					# # shift bias
+					# tmp = self.values_mf[self.current_action]
+					# self.values_mf *= self.parameters['shift']/3.
+					# self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
+					# # spatial biaises
+					# self.spatial_biases[self.sari[i,2]-1] += 1.0
 
 			# START TRIAL
-			self.current_action = self.sari[i][2]-1
+			self.current_action = int(self.sari[i][2]-1)
 			# print "PROBLEM=", self.problem, " ACTION=", self.current_action
 			r = self.sari[i][0]            
 						
@@ -90,6 +91,7 @@ class mixture_1():
 			self.updateValue(r)
 
 		# ALIGN TO MEDIAN
+		self.rt_align = np.array([np.median(self.reaction), np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25)])
 		self.reaction = self.reaction - np.median(self.reaction)
 		self.reaction = self.reaction / (np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25))        
 		# LEAST SQUARES            
