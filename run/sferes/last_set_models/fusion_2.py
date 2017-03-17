@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
 	tmp = np.exp(tmp0*float(beta))
 	return  tmp/float(np.sum(tmp))
 
-class fusion_1():
+class fusion_2():
 	""" fusion strategy
 	"""
 	def __init__(self):
@@ -29,7 +29,7 @@ class fusion_1():
 							"sigma":[0.0, 20.0],
 							"gamma":[0.0, 100.0], # temperature for entropy from qlearning soft-max
 							"kappa":[0.0, 1.0],
-							"shift":[0.0, 1.0]})
+							"shift":[0.0, 0.999999]}) # gamma
 
 	def sferes_call(self, sari, mean_rt, parameters):
 		self.parameters = parameters
@@ -402,7 +402,7 @@ class fusion_1():
 		self.p_r_a[0, self.current_action, int(r)] = 1.0        
 		# Updating model free
 		r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
-		self.delta = float(r)-self.values_mf[self.current_action]        
+		self.delta = float(r) + self.parameters['shift']*np.max(self.values_mf) - self.values_mf[self.current_action]
 		self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
 		# forgetting
 		# index = range(self.n_action)

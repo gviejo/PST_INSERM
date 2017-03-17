@@ -149,14 +149,15 @@ for s in monkeys.keys():
 	length_models[s] = length_models[s]/np.sum(length_models[s])	
 	# centering rt from models
 	# need mediane and interquartile range
+	timing = model.timing
 	fit = model.sferes_call(np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt"), np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt"), p_test_v1[s]['best_tche'][m])
-	for k in model.timing:
-		model.timing[k] = model.timing[k] - model.rt_align[0]
-		model.timing[k] = model.timing[k] / model.rt_align[1]
+	for k in timing:
+		timing[k] = timing[k] - model.rt_align[0]
+		timing[k] = timing[k] / model.rt_align[1]
 			
 	for k in time_models[s].iterkeys():		
-		time_models[s][k] = np.array([model.timing[k].mean(0),
-									  model.timing[k].var(0)])
+		time_models[s][k] = np.array([timing[k].mean(0),
+									  timing[k].var(0)])
 	
 
 

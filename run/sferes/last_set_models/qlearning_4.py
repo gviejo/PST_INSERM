@@ -14,7 +14,7 @@ def SoftMaxValues(values, beta):
     return  tmp/float(np.sum(tmp))
 
 
-class qlearning_1():
+class qlearning_4():
     """ 
     """
     def __init__(self):
@@ -25,7 +25,7 @@ class qlearning_1():
                     "beta":[0.0, 100.0], # QLEARNING
                     "sigma":[0.0, 20.0], 
                     "kappa":[0.0, 1.0],
-                    "shift":[0.0, 1.0]})
+                    "shift":[0.0, 0.999999]})
 
     def sferes_call(self, sari, mean_rt, parameters):        
         self.parameters = parameters
@@ -40,10 +40,7 @@ class qlearning_1():
         for i in xrange(self.N):
             if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
                     # START BLOC
-                    self.problem = self.sari[i][1]                    
-                    # RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-                    # print "biais", self.spatial_biases
-                    self.values_mf = np.zeros(4)
+                    self.problem = self.sari[i][1]
 
             # START TRIAL
             self.current_action = self.sari[i][2]-1
@@ -112,11 +109,6 @@ class qlearning_1():
             print "\n"
             
             
-            
-            
-
-
-
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]
         return np.sum(np.array(tmp) < np.random.rand())-1
@@ -127,11 +119,11 @@ class qlearning_1():
         r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                        
         # print "R = ", float(r)
         # print self.values_mf[self.current_action]        
-        self.delta = float(r)-self.values_mf[self.current_action]        
+        self.delta = float(r) + self.parameters['shift']*np.max(self.values_mf) - self.values_mf[self.current_action]        
         # print "delta = ", self.delta
         self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta        
         # print " mf2=" , self.values_mf
-        # index = range(self.n_action)
-        # index.pop(int(self.current_action))        
-        # self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])
+        index = range(self.n_action)
+        index.pop(int(self.current_action))        
+        self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])
         # print " mf3=", self.values_mf

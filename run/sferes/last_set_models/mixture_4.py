@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
 	tmp = np.exp(tmp0*float(beta))
 	return  tmp/float(np.sum(tmp))
 
-class mixture_1():
+class mixture_4():
 	""" mixture strategy
 	"""
 	def __init__(self):
@@ -28,7 +28,7 @@ class mixture_1():
 					"sigma":[0.0, 20.0], 
 					"weight":[0.0, 1.0], 
 					"kappa":[0.0, 1.0],
-					"shift":[0.0, 1.0]})
+					"shift":[0.0, 0.999999]})
 
 	def sferes_call(self, sari, mean_rt, parameters):        
 		self.parameters = parameters
@@ -53,8 +53,7 @@ class mixture_1():
 					# START BLOC
 					self.problem = self.sari[i][1]
 					self.n_element = 0
-					self.w = self.parameters['weight']
-					self.values_mf = np.zeros(4)
+					self.w = self.parameters['weight']					
 					# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
 					# print "biais", self.spatial_biases
 					# self.values_mf = self.spatial_biases/self.spatial_biases.sum()
@@ -373,9 +372,9 @@ class mixture_1():
 		self.p_r_a[0, self.current_action, int(r)] = 1.0        
 		# Updating model free
 		r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                        
-		self.delta = float(r)-self.values_mf[self.current_action]        
+		self.delta = float(r) + self.parameters['shift']*np.max(self.values_mf) - self.values_mf[self.current_action]
 		self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                        
 		# forgetting
-		# index = range(self.n_action)
-		# index.pop(int(self.current_action))        
-		# self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        
+		index = range(self.n_action)
+		index.pop(int(self.current_action))        
+		self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        

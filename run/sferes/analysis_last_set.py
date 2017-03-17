@@ -12,18 +12,74 @@ import sys
 import os
 from optparse import OptionParser
 import numpy as np
+import multiprocessing
+import itertools
+sys.path.append("../sferes/last_set_models/")
+from fusion_1 import fusion_1
+from mixture_1 import mixture_1
+from bayesian_1 import bayesian_1
+from qlearning_1 import qlearning_1
 
 sys.path.append("../../src")
-
 from Models import *
-
 from matplotlib import *
 from pylab import *
-
 from Sferes import pareto
 from itertools import *
 from time import sleep
 import cPickle as pickle
+
+
+
+# ------------------------------------
+# FUNCTION FOR MULTIPROCESSING
+# ------------------------------------
+def worker_test_star(a_b):
+	return worker_test(*a_b)
+
+def worker_test(w, s, value_tche):
+	# pareto4 = model | run | gen | ind |
+	# for 6 jobs
+	cut = np.sort(value_tche)[int(len(value_tche)/6.)]
+	points = np.where(value_tche < cut)[0]	
+	pos = np.array_split(points, 6)[w]
+	value3 = np.zeros((len(pos),2))
+	for t in pos:		
+		l = pareto4[s][t]		
+		m = id_to_models[int(l[0])]
+		run_ = int(l[1])
+		gen_ = int(l[2])
+		num_ = int(l[3])
+		data_run = data[s][1][m][run_]
+		tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]		
+		p = dict(zip(p_order[m],tmp[4:]))
+		model = vmodels[m][1]
+		model.test_call(10, problems_sar[s], p)				
+		performance = {int(i):[] for i in np.unique(model.length)}
+		timings = {int(i):[] for i in np.unique(model.length)}
+		for i in xrange(model.performance.shape[0]):		
+			for j in np.unique(model.length[i]):
+				index = model.length[i] == int(j)
+				performance[int(j)].append(model.performance[i,index])					
+		for i in performance.iterkeys():
+			performance[i] = np.vstack(performance[i])
+			performance[i] = np.mean(performance[i], 0)
+		timing = model.timing
+		fit = model.sferes_call(np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt"), np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt"), p)
+		for k in timing:
+			timing[k] = timing[k] - model.rt_align[0]
+			timing[k] = timing[k] / model.rt_align[1]				
+		for k in timings.iterkeys():		
+			timings[k] = timing[k].mean(0)		
+		for k in xrange(1,6):
+			if performance.has_key(k):
+				value3[np.where(pos == t)[0][0], 0] += np.sum(np.power(performance_monkeys[s][k]-performance[k], 2))
+			if timings.has_key(k): 
+				value3[np.where(pos == t)[0][0], 1] += np.sum(np.power(time_monkeys[s][k]-timings[k], 2))
+		
+		# print "worker ", w, "| line ", t, " | value ", value3[np.where(pos == t)[0][0], 0], " ", np.where(pos == t)[0][0]		
+	return np.hstack((np.vstack(pos), value3))
+	
 
 models = dict({"fusion":FSelection(),
 					"qlearning":QLearning(),
@@ -32,6 +88,11 @@ models = dict({"fusion":FSelection(),
 					"mixture":CSelection(),
 					"metaf":MetaFSelection(),
 					"sweeping":Sweeping()})
+vmodels = dict({'fusion':{1:fusion_1()},
+				'mixture':{1:mixture_1()},
+				'bayesian':{1:bayesian_1()},
+				'qlearning':{1:qlearning_1()}
+			})
 
 p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
 					'qlearning':['alpha','beta', 'sigma', 'kappa', 'shift'],
@@ -43,7 +104,7 @@ p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold',
 
 
 front = pareto("SFERES_9") # dummy for rt
-
+test = np.arange(5)*3.0
 # -----------------------------------
 # LOADING DATA
 # -----------------------------------
@@ -76,6 +137,55 @@ p_test_v1 = {}
 tche = {}
 indd = {}
 position = {}
+to_compare_value = {}
+#------------------------------------
+# MONKEYS PERFORMANCE AND REACTION TIMES to get problems_sar
+#------------------------------------
+problems_sar = {}
+performance_monkeys = {}
+time_monkeys = {}
+for s in monkeys:
+	problems_sar[s] = []
+	monkey = np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt", dtype = 'float')
+	monkey[:,6] = monkey[:,6] - np.median(monkey[:,6])
+	monkey[:,6] = monkey[:,6] / (np.percentile(monkey[:,6], 75) - np.percentile(monkey[:,6], 25))
+	tmp = [[1, monkey[0,4]-1,monkey[0,5]-1,monkey[0,3]]]
+	tmp3 = [] # for choices
+	tmp4 = [monkey[0,6]] # for rt
+	count = 0
+	performance_monkeys[s] = []	
+	time_monkeys[s] = {i:[] for i in xrange(1,6)}
+	length_problems_count = []
+	for i in xrange(1,len(monkey)):				
+		if monkey[i-1,1] != monkey[i,1] or int(monkey[i,2]) == 0 and int(monkey[i-1,2]) == 1: # new problem 			
+			tmp = np.array(tmp)
+			if tmp[:,3].sum()>=1 and i - count > 1 and len(tmp4) > len(tmp):
+				problems_sar[s] += list(tmp)							
+				performance_monkeys[s].append(tmp3)
+				time_monkeys[s][len(tmp4[0:-3])].append(tmp4)
+				length_problems_count.append(len(tmp))				
+			tmp = [[1, monkey[i,4]-1,monkey[i,5]-1,monkey[i,3]]]						
+			tmp4 = [monkey[i,6]]
+			count = i
+		else:
+			if int(monkey[i,2]) == 0 and int(monkey[i-1,2]) == 0: # search phase				
+				tmp.append([0, monkey[i,4]-1,monkey[i,5]-1,monkey[i,3]])
+				tmp4.append(monkey[i,6])		
+			elif int(monkey[i,2]) == 1 and int(monkey[i-1,2]) == 0:# repeat phase					
+				tmp3 = monkey[i:i+3,3]
+				tmp4+=list(monkey[i:i+3,6])						
+	problems_sar[s] = np.array(problems_sar[s])
+	performance_monkeys[s] = np.array(performance_monkeys[s])
+	for k in time_monkeys[s].keys():
+		time_monkeys[s][k] = np.array(time_monkeys[s][k])
+		time_monkeys[s][k] = np.mean(time_monkeys[s][k], 0)	
+	tmp = {}
+	for i in np.unique(length_problems_count):
+		index = length_problems_count == i
+		tmp[i] = np.mean(performance_monkeys[s][index], 0)							
+	performance_monkeys[s] = tmp	
+
+
 #------------------------------------
 # best log/rt
 #------------------------------------
@@ -214,7 +324,9 @@ for s in monkeys: # singe
 # ------------------------------------
 # SELECTION BY TESTING PARAMETERS
 # ------------------------------------
-	# must call testing files
+	# FOR ALL SET
+	# must call model testing files as determined by pareto3 = [model | set | run | gen | num | fit1 | fit2]
+	
 
 # ------------------------------------
 # BEST RT
@@ -276,7 +388,27 @@ for s in monkeys: # singe
 	data_run = data[s][1][m][run_]
 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
 	p_test_v1[s] = {'best_tche':dict({m:dict(zip(p_order[m],tmp[4:]))})}                        
-
+	to_compare_value[s] = {'tche':value}
+# ------------------------------------
+# SELECTION BY TESTING PARAMETERS SET 1 only the best 25 percent of solutions according to value of tcheby
+# ------------------------------------
+	# pareto4 = model | run | gen | ind |	
+	pool = multiprocessing.Pool(processes = 6)
+	value2 = pool.map(worker_test_star, itertools.izip(range(6), itertools.repeat(s), itertools.repeat(value))) 
+	sys.exit()
+	value2 = np.vstack(np.array(value2))
+	value2 = (value2 - np.min(value2, 0))/(np.max(value2, 0) - np.min(value2, 0))
+	value2 = value2.sum(1)
+	ind_best_point = np.argmin(value2)
+	best_ind = pareto4[s][ind_best_point]
+	m = id_to_models[int(best_ind[0])]
+	run_ = int(best_ind[1])
+	gen_ = int(best_ind[2])
+	num_ = int(best_ind[3])
+	data_run = data[s][1][m][run_]
+	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+	p_test_v1[s]['best_test'] = dict({m:dict(zip(p_order[m],tmp[4:]))})                        	
+	to_compare_value[s]['test'] = value2
 # ------------------------------------
 # BEST CHOICE & RT SET 1
 # ------------------------------------

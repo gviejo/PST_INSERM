@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
 	tmp = np.exp(tmp0*float(beta))
 	return  tmp/float(np.sum(tmp))
 
-class fusion_1():
+class fusion_5():
 	""" fusion strategy
 	"""
 	def __init__(self):
@@ -29,7 +29,7 @@ class fusion_1():
 							"sigma":[0.0, 20.0],
 							"gamma":[0.0, 100.0], # temperature for entropy from qlearning soft-max
 							"kappa":[0.0, 1.0],
-							"shift":[0.0, 1.0]})
+							"shift":[0.0, 0.999999]}) # gamma
 
 	def sferes_call(self, sari, mean_rt, parameters):
 		self.parameters = parameters
@@ -54,9 +54,7 @@ class fusion_1():
 			if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
 					# START BLOC
 					self.problem = self.sari[i][1]
-					self.n_element = 0
-					# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-					self.values_mf = np.zeros(4)					
+					self.n_element = 0					
 
 
 			# START TRIAL
@@ -66,16 +64,21 @@ class fusion_1():
 			self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
 			self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
 			# BAYESIAN CALL
-			self.p = self.uniform[:,:]
-			self.Hb = self.max_entropy
 			self.nb_inferences = 0
-			self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
 			self.p_decision = np.zeros(int(self.parameters['length'])+1)
 			self.p_retrieval= np.zeros(int(self.parameters['length'])+1)
 			self.p_sigmoide = np.zeros(int(self.parameters['length'])+1)
 			self.p_ak = np.zeros(int(self.parameters['length'])+1)        
 			q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
 			reaction = np.zeros(int(self.parameters['length'])+1)
+
+			# NO SWEEPING
+			if self.sari[i][4] == 1 or i == 0 or self.sari[i][4]-self.sari[i-1][4] < 0.0:
+				self.p = self.uniform[:,:]                
+				self.Hb = self.max_entropy
+				self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                                    
+
+
 			# START            
 			self.sigmoideModule()
 			self.p_sigmoide[0] = self.pA
@@ -109,6 +112,16 @@ class fusion_1():
 			self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
 			# print self.reaction[i]
 			self.updateValue(r)
+
+			# SWEEPING
+			if self.sari[i][4] == 0 and r == 0:
+				self.p = self.uniform[:,:]                
+				self.Hb = self.max_entropy
+				self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        
+				self.nb_inferences = 0
+				for j in xrange(self.n_element):
+					self.inferenceModule()
+				self.evaluationModule() 			
 
 		# ALIGN TO MEDIAN
 		self.rt_align = np.array([np.median(self.reaction), np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25)])
@@ -402,9 +415,9 @@ class fusion_1():
 		self.p_r_a[0, self.current_action, int(r)] = 1.0        
 		# Updating model free
 		r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
-		self.delta = float(r)-self.values_mf[self.current_action]        
+		self.delta = float(r) + self.parameters['shift']*np.max(self.values_mf) - self.values_mf[self.current_action]
 		self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
 		# forgetting
-		# index = range(self.n_action)
-		# index.pop(int(self.current_action))        
-		# self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
+		index = range(self.n_action)
+		index.pop(int(self.current_action))        
+		self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    

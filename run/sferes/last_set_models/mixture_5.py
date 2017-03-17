@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
 	tmp = np.exp(tmp0*float(beta))
 	return  tmp/float(np.sum(tmp))
 
-class mixture_1():
+class mixture_5():
 	""" mixture strategy
 	"""
 	def __init__(self):
@@ -28,7 +28,7 @@ class mixture_1():
 					"sigma":[0.0, 20.0], 
 					"weight":[0.0, 1.0], 
 					"kappa":[0.0, 1.0],
-					"shift":[0.0, 1.0]})
+					"shift":[0.0, 0.999999]})
 
 	def sferes_call(self, sari, mean_rt, parameters):        
 		self.parameters = parameters
@@ -53,29 +53,23 @@ class mixture_1():
 					# START BLOC
 					self.problem = self.sari[i][1]
 					self.n_element = 0
-					self.w = self.parameters['weight']
-					self.values_mf = np.zeros(4)
-					# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-					# print "biais", self.spatial_biases
-					# self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-					# # shift bias
-					# tmp = self.values_mf[self.current_action]
-					# self.values_mf *= self.parameters['shift']/3.
-					# self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-					# # spatial biaises
-					# self.spatial_biases[self.sari[i,2]-1] += 1.0
+					self.w = self.parameters['weight']					
+
 
 			# START TRIAL
 			self.current_action = int(self.sari[i][2]-1)
 			# print "PROBLEM=", self.problem, " ACTION=", self.current_action
 			r = self.sari[i][0]            
-						
-			# BAYESIAN CALL
-			self.p = self.uniform[:,:]
-			self.Hb = self.max_entropy
-			self.nb_inferences = 0  
-			self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+			
 
+			# NO SWEEPING
+			if self.sari[i][4] == 1 or i == 0 or self.sari[i][4]-self.sari[i-1][4] < 0.0:
+				self.p = self.uniform[:,:]                
+				self.Hb = self.max_entropy
+				self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                                    
+
+			# BAYESIAN CALL
+			self.nb_inferences = 0  
 			while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
 				self.inferenceModule()
 				self.evaluationModule()                    
@@ -88,6 +82,15 @@ class mixture_1():
 			# self.reaction[i] = self.Hb + self.parameters['sigma']*self.Hf            
 			
 			self.updateValue(r)
+			# SWEEPING
+			if self.sari[i][4] == 0 and r == 0:
+				self.p = self.uniform[:,:]                
+				self.Hb = self.max_entropy
+				self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        
+				self.nb_inferences = 0
+				for j in xrange(self.n_element):
+					self.inferenceModule()
+				self.evaluationModule()    			
 
 		# ALIGN TO MEDIAN
 		self.rt_align = np.array([np.median(self.reaction), np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25)])
@@ -373,9 +376,9 @@ class mixture_1():
 		self.p_r_a[0, self.current_action, int(r)] = 1.0        
 		# Updating model free
 		r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                        
-		self.delta = float(r)-self.values_mf[self.current_action]        
+		self.delta = float(r) + self.parameters['shift']*np.max(self.values_mf) - self.values_mf[self.current_action]
 		self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                        
 		# forgetting
-		# index = range(self.n_action)
-		# index.pop(int(self.current_action))        
-		# self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        
+		index = range(self.n_action)
+		index.pop(int(self.current_action))        
+		self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        

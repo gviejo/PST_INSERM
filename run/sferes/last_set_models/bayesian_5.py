@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
     tmp = np.exp(tmp0*float(beta))
     return  tmp/float(np.sum(tmp))
 
-class bayesian_1():
+class bayesian_5():
     """ 
     """
 
@@ -25,6 +25,81 @@ class bayesian_1():
                     "threshold":[0.01, self.max_entropy], 
                     "noise":[0.0, 0.1],                                                
                     "sigma":[0.0, 20.0]})
+
+    def sferes_call(self, sari, mean_rt, parameters):        
+        self.parameters = parameters
+        self.sari = sari[:,[3,4,5,9,2]] # reward | problem | action | index | phase
+        self.N = len(self.sari)        
+        self.mean_rt = mean_rt
+        self.value = np.zeros(self.N)
+        self.reaction = np.zeros(self.N)
+        self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
+        self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
+        self.nb_inferences = 0
+        self.n_element = 0
+        self.Hb = self.max_entropy        
+        self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
+        self.problem = self.sari[0,1]
+        self.p_a_final = np.zeros(self.n_action)
+        for i in xrange(self.N):
+            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
+                    # START BLOC
+                    self.problem = self.sari[i][1]
+                    self.n_element = 0
+
+            # START TRIAL
+            self.current_action = self.sari[i][2]-1
+            # print i, "PROBLEM=", self.problem, " ACTION=", self.current_action
+            r = self.sari[i][0]            
+                        
+            # BAYESIAN CALL
+            self.nb_inferences = 0  
+
+            # NO SWEEPING
+            if self.sari[i][4] == 1 or i == 0 or self.sari[i][4]-self.sari[i-1][4] < 0.0:
+                self.p = self.uniform[:,:]                
+                self.Hb = self.max_entropy
+                self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                                    
+
+
+            while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
+                self.inferenceModule()
+                self.evaluationModule()                    
+                # print self.p_a_mb
+
+            
+            self.value[i] = float(np.log(self.p_a_mb[self.current_action])) 
+            # print self.value[i]
+            H = -(self.p_a_mb*np.log2(self.p_a_mb)).sum()
+            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+            self.reaction[i] = self.parameters['sigma']*self.Hb
+            # print self.reaction[i]
+            self.updateValue(r)
+
+            # SWEEPING
+            if self.sari[i][4] == 0 and r == 0:
+                self.p = self.uniform[:,:]                
+                self.Hb = self.max_entropy
+                self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        
+                self.nb_inferences = 0
+                for j in xrange(self.n_element):
+                    self.inferenceModule()
+                self.evaluationModule()                  
+
+
+
+        # ALIGN TO MEDIAN
+        self.reaction = self.reaction - np.median(self.reaction)
+        self.reaction = self.reaction / (np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25))        
+        # LEAST SQUARES            
+        self.rt_model = np.zeros(len(self.mean_rt))
+        for i in xrange(len(self.rt_model)):
+            self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
+        # FIT
+        fit = np.zeros(2)
+        fit[0] = np.sum(self.value)
+        fit[1] = -np.sum(np.power(self.rt_model-self.mean_rt[:,1], 2.0))
+        return fit
 
     def analysis_call(self, sari, mean_rt, parameters):        
         self.parameters = parameters
@@ -59,11 +134,15 @@ class bayesian_1():
             # print i, "PROBLEM=", self.problem, " ACTION=", self.current_action
             r = self.sari[i][0]            
                         
+
+            # NO SWEEPING
+            if self.sari[i][4] == 1 or i == 0 or self.sari[i][4]-self.sari[i-1][4] < 0.0:
+                self.p = self.uniform[:,:]                
+                self.Hb = self.max_entropy
+                self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                                    
+
             # BAYESIAN CALL
-            self.p = self.uniform[:,:]
-            self.Hb = self.max_entropy
             self.nb_inferences = 0  
-            self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
 
             while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
                 self.inferenceModule()
@@ -83,6 +162,15 @@ class bayesian_1():
             self.reaction[i] = self.parameters['sigma']*self.Hb
             # print self.reaction[i]
             self.updateValue(r)
+            # SWEEPING
+            if self.sari[i][4] == 0 and r == 0:
+                self.p = self.uniform[:,:]                
+                self.Hb = self.max_entropy
+                self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        
+                self.nb_inferences = 0
+                for j in xrange(self.n_element):
+                    self.inferenceModule()
+                self.evaluationModule()    
 
         # ALIGN TO MEDIAN
         self.reaction = self.reaction - np.median(self.reaction)
@@ -92,65 +180,6 @@ class bayesian_1():
         for i in xrange(len(self.rt_model)):
             self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
 
-
-    def sferes_call(self, sari, mean_rt, parameters):        
-        self.parameters = parameters
-        self.sari = sari[:,[3,4,5,9,2]] # reward | problem | action | index | phase
-        self.N = len(self.sari)        
-        self.mean_rt = mean_rt
-        self.value = np.zeros(self.N)
-        self.reaction = np.zeros(self.N)
-        self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
-        self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
-        self.nb_inferences = 0
-        self.n_element = 0
-        self.Hb = self.max_entropy        
-        self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
-        self.problem = self.sari[0,1]
-        self.p_a_final = np.zeros(self.n_action)
-        for i in xrange(self.N):
-            if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
-                    # START BLOC
-                    self.problem = self.sari[i][1]
-                    self.n_element = 0
-
-            # START TRIAL
-            self.current_action = self.sari[i][2]-1
-            # print i, "PROBLEM=", self.problem, " ACTION=", self.current_action
-            r = self.sari[i][0]            
-                        
-            # BAYESIAN CALL
-            self.p = self.uniform[:,:]
-            self.Hb = self.max_entropy
-            self.nb_inferences = 0  
-            self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
-
-            while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
-                self.inferenceModule()
-                self.evaluationModule()                    
-                # print self.p_a_mb
-
-            
-            self.value[i] = float(np.log(self.p_a_mb[self.current_action])) 
-            # print self.value[i]
-            H = -(self.p_a_mb*np.log2(self.p_a_mb)).sum()
-            # self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-            self.reaction[i] = self.parameters['sigma']*self.Hb
-            # print self.reaction[i]
-            self.updateValue(r)
-
-        # ALIGN TO MEDIAN
-        self.reaction = self.reaction - np.median(self.reaction)
-        self.reaction = self.reaction / (np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25))        
-        # LEAST SQUARES            
-        self.rt_model = np.zeros(len(self.mean_rt))
-        for i in xrange(len(self.rt_model)):
-            self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
-        # FIT
-        fit = np.zeros(2)
-        fit[0] = np.sum(self.value)
-        fit[1] = -np.sum(np.power(self.rt_model-self.mean_rt[:,1], 2.0))
-        return fit
 
     def test_call(self, list_of_problems, parameters):        
         self.parameters = parameters        
