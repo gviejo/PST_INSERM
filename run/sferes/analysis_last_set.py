@@ -22,8 +22,8 @@ from qlearning_1 import qlearning_1
 
 sys.path.append("../../src")
 from Models import *
-from matplotlib import *
-from pylab import *
+# from matplotlib import *
+# from pylab import *
 from Sferes import pareto
 from itertools import *
 from time import sleep
@@ -39,10 +39,10 @@ def worker_test_star(a_b):
 
 def worker_test(w, s, value_tche):
 	# pareto4 = model | run | gen | ind |
-	# for 6 jobs
-	cut = np.sort(value_tche)[int(len(value_tche)/6.)]
+	# for 8 jobs
+	cut = np.sort(value_tche)[int(len(value_tche)/4.)]
 	points = np.where(value_tche < cut)[0]	
-	pos = np.array_split(points, 6)[w]
+	pos = np.array_split(points, 8)[w]
 	value3 = np.zeros((len(pos),2))
 	for t in pos:		
 		l = pareto4[s][t]		
@@ -77,7 +77,7 @@ def worker_test(w, s, value_tche):
 			if timings.has_key(k): 
 				value3[np.where(pos == t)[0][0], 1] += np.sum(np.power(time_monkeys[s][k]-timings[k], 2))
 		
-		# print "worker ", w, "| line ", t, " | value ", value3[np.where(pos == t)[0][0], 0], " ", np.where(pos == t)[0][0]		
+		print "worker ", w, "| line ", t, " | value ", value3[np.where(pos == t)[0][0], 0], " ", np.where(pos == t)[0][0]		
 	return np.hstack((np.vstack(pos), value3))
 	
 
@@ -393,8 +393,8 @@ for s in monkeys: # singe
 # SELECTION BY TESTING PARAMETERS SET 1 only the best 25 percent of solutions according to value of tcheby
 # ------------------------------------
 	# pareto4 = model | run | gen | ind |	
-	pool = multiprocessing.Pool(processes = 6)
-	value2 = pool.map(worker_test_star, itertools.izip(range(6), itertools.repeat(s), itertools.repeat(value))) 
+	pool = multiprocessing.Pool(processes = 8)
+	value2 = pool.map(worker_test_star, itertools.izip(range(8), itertools.repeat(s), itertools.repeat(value))) 
 	sys.exit()
 	value2 = np.vstack(np.array(value2))
 	value2 = (value2 - np.min(value2, 0))/(np.max(value2, 0) - np.min(value2, 0))
