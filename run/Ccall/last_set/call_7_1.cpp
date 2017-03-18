@@ -125,7 +125,7 @@ double sum_prod(double *a, double *b, int n) {
 	return tmp;
 }
 // void sferes_call(double * fit, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_)
-void sferes_call(double * fit, const int N, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_, double sigma_, double kappa_, double shift_, double xi_)
+void sferes_call(double * fit, const int N, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_, double sigma_, double kappa_, double shift_, double xi_, double yi_)
 {
 
 	///////////////////
@@ -140,7 +140,8 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 	double gamma=0.0+(100.0-0.0)*gamma_;
 	double kappa=0.0+(1.0-0.0)*kappa_;
 	double shift=0.0+(0.999999-0.0)*shift_;
-	double xi=-20.0+(20.0+20.0)*xi_;	
+	double xi=-20.0+(0.0+20.0)*xi_;	
+	double yi=0.0+(20.0-0.0)*yi_;
 
 	// std::cout << "alpha : " << alpha << std::endl;
 	// std::cout << "beta : " << beta << std::endl;
@@ -344,7 +345,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			}
 		}
 
-		if (delta < xi) {	
+		if ((delta < xi) || (delta>yi)) {	
 			// UPDATE MEMORY 						
 			for (int k=length-1;k>0;k--) {						
 				for (int m=0;m<n_action;m++) {
