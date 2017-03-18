@@ -394,12 +394,11 @@ for s in monkeys: # singe
 # ------------------------------------
 	# pareto4 = model | run | gen | ind |	
 	pool = multiprocessing.Pool(processes = 8)
-	value2 = pool.map(worker_test_star, itertools.izip(range(8), itertools.repeat(s), itertools.repeat(value))) 
-	sys.exit()
+	value2 = pool.map(worker_test_star, itertools.izip(range(8), itertools.repeat(s), itertools.repeat(value))) 	
 	value2 = np.vstack(np.array(value2))
-	value2 = (value2 - np.min(value2, 0))/(np.max(value2, 0) - np.min(value2, 0))
-	value2 = value2.sum(1)
-	ind_best_point = np.argmin(value2)
+	value2[:,1:] = (value2[:,1:] - np.min(value2[:,1:], 0))/(np.max(value2[:,1:], 0) - np.min(value2[:,1:], 0))
+	value2 = np.vstack((value2[:,0], np.sum(value2[:,1:], 1))).transpose()
+	ind_best_point = int(value2[np.argmin(value2[:,1]), 0])
 	best_ind = pareto4[s][ind_best_point]
 	m = id_to_models[int(best_ind[0])]
 	run_ = int(best_ind[1])
@@ -408,7 +407,9 @@ for s in monkeys: # singe
 	data_run = data[s][1][m][run_]
 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
 	p_test_v1[s]['best_test'] = dict({m:dict(zip(p_order[m],tmp[4:]))})                        	
-	to_compare_value[s]['test'] = value2
+	tmp = np.ones(len(pareto4[s]))
+	tmp[value2[:,0].astype('int')] = value2[:,1]
+	to_compare_value[s]['test'] = tmp
 # ------------------------------------
 # BEST CHOICE & RT SET 1
 # ------------------------------------
@@ -422,6 +423,8 @@ for s in monkeys: # singe
 # # SAVING IN ../papier/	
 with open("../papier/p_test_v1.pickle",'wb') as f:
 	pickle.dump(p_test_v1, f)
+with open("../papier/to_compare_value.pickle", 'wb') as f:
+	pickle.dump(to_compare_value, f)
 with open("../papier/p_test_all_v.pickle", 'wb') as f:
 	pickle.dump(p_test)
 
