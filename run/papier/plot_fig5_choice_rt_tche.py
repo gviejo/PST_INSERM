@@ -1,7 +1,5 @@
 
 import numpy as np 
-from pylab import *
-import matplotlib.gridspec as gridspec
 import cPickle as pickle
 import sys, os
 sys.path.append("../sferes/last_set_models/")
@@ -39,7 +37,7 @@ colors_m = dict({'fusion':'#F1433F',
 				'mixture':'#3D4C53',
 				'random':'white',
 				'monkeys':'black'})
-style = dict({'fusion':'-',
+style_ = dict({'fusion':'-',
 				'mixture':'-',
 				'monkeys':'--'})
 marker = dict({'fusion':'s',
@@ -130,10 +128,10 @@ for s in monkeys.keys():
 	####################################################################################
 	# MODELS PERFORMANCE AND REACTION TIMES
 	problems_sar = np.array(problems_sar)	
-	m = p_test_v1[s]['best_tche'].keys()[0]
+	m = p_test_v1[s]['best_test'].keys()[0]
 	model = models[m][1]
 	best_model[s] = m
-	model.test_call(1000, problems_sar, p_test_v1[s]['best_tche'][m])
+	model.test_call(2, problems_sar, p_test_v1[s]['best_test'][m])
 	performance_models[s] = np.array(model.performance)
 	tmp2 = {int(i):[] for i in np.unique(model.length)}
 	for i in xrange(performance_models[s].shape[0]):		
@@ -150,7 +148,7 @@ for s in monkeys.keys():
 	# centering rt from models
 	# need mediane and interquartile range
 	timing = model.timing
-	fit = model.sferes_call(np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt"), np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt"), p_test_v1[s]['best_tche'][m])
+	fit = model.sferes_call(np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt"), np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt"), p_test_v1[s]['best_test'][m])
 	for k in timing:
 		timing[k] = timing[k] - model.rt_align[0]
 		timing[k] = timing[k] / model.rt_align[1]
@@ -162,15 +160,57 @@ for s in monkeys.keys():
 
 
 
+
+######################################################################################################
+# PLOT ###############################################################################################
+######################################################################################################
+
+
+
+
+import matplotlib as mpl
+mpl.use('pgf')
+
+
+def figsize(scale):
+    fig_width_pt = 390.0                          # Get this from LaTeX using \the\textwidth
+    inches_per_pt = 1.0/72.27                       # Convert pt to inch
+    golden_mean = (np.sqrt(5.0)-1.0)/2.0            # Aesthetic ratio (you could change this)
+    fig_width = fig_width_pt*inches_per_pt*scale    # width in inches
+    fig_height = fig_width*golden_mean*2.0              # height in inches
+    fig_size = [fig_width,fig_height]
+    return fig_size
+
+pgf_with_latex = {                      # setup matplotlib to use latex for output
+    "pgf.texsystem": "pdflatex",        # change this if using xetex or lautex
+    "text.usetex": True,                # use LaTeX to write all text
+    "font.family": "serif",
+    "font.serif": [],                   # blank entries should cause plots to inherit fonts from the document
+    "font.sans-serif": [],
+    "font.monospace": [],
+    "axes.labelsize": 6,               # LaTeX default is 10pt font.
+    "font.size": 6,
+    "legend.fontsize": 6,               # Make the legend/label fonts a little smaller
+    "xtick.labelsize": 4,
+    "ytick.labelsize": 4,
+    "figure.figsize": figsize(1),     # default fig size of 0.9 textwidth
+    "pgf.preamble": [
+        r"\usepackage[utf8x]{inputenc}",    # use utf8 fonts becasue your computer can handle it :)
+        r"\usepackage[T1]{fontenc}",        # plots will be generated using this preamble
+        ]
+    }
+mpl.rcParams.update(pgf_with_latex)
+import matplotlib.gridspec as gridspec
+from matplotlib.pyplot import *
+
 # THE PLOT FOR PERFORMANCES = SEARCH + REPEAT IS ALREADY MADE
 
-figure(figsize = (13,10)) # width | height
+figure(figsize = figsize(1)) # width | height
 subplots_adjust(hspace = 0.18, wspace = 0.3)
 outer = gridspec.GridSpec(3, 2) 
 count = 1
 alpha = 0.2
-for s in monkeys.keys():
-	print s
+for s in monkeys.keys():	
 	gs = gridspec.GridSpecFromSubplotSpec(2,1,
 										subplot_spec = outer[monkeys.keys().index(s)], 
 										hspace = 0.2,
@@ -252,9 +292,9 @@ for s in monkeys.keys():
 	ax3.set_ylabel("RT")
 	count = count + 1 if count%2 else count + 3
 	
-line2 = tuple([Line2D(range(1),range(1), linestyle = style[m], marker = marker[m], alpha=1.0, color=colors_m[m], linewidth = 4) for m in ['fusion', 'mixture', 'monkeys']])
+line2 = tuple([Line2D(range(1),range(1), linestyle = style_[m], marker = marker[m], alpha=1.0, color=colors_m[m], linewidth = 4) for m in ['fusion', 'mixture', 'monkeys']])
 legend(line2,tuple(['Entropy-based coordination', 'Weight-based mixture', 'Monkey']), bbox_to_anchor = (2.1, 2.0), fancybox = True, shadow = True)
 
-savefig("fig3_choice_rt_v1_tche.pdf", dpi = 900, facecolor = 'white', bbox_inches = 'tight')
+savefig("fig5_choice_rt_v1_tche.pdf", dpi = 900, facecolor = 'white', bbox_inches = 'tight')
 
-os.system("evince fig3_choice_rt_v1_tche.pdf &")
+os.system("evince fig5_choice_rt_v1_tche.pdf &")
