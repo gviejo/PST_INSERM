@@ -265,7 +265,7 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		weigh = (p_wmc*weigh)/(p_wmc*weigh+p_rl*(1.0-weigh));			
 
 		// MODEL FREE	
-		double reward;
+		double reward = 0.0;
 		if (r == 0) {
 			reward = -1.0;
 		} else if (r == 1) {

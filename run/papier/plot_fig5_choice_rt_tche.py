@@ -39,7 +39,7 @@ colors_m = dict({'fusion':'#F1433F',
 				'monkeys':'black'})
 style_ = dict({'fusion':'-',
 				'mixture':'-',
-				'monkeys':'--'})
+				'monkeys':'-'})
 marker = dict({'fusion':'s',
 				'mixture':'s',
 				'monkeys':'o'})
@@ -131,7 +131,7 @@ for s in monkeys.keys():
 	m = p_test_v1[s]['best_test'].keys()[0]
 	model = models[m][1]
 	best_model[s] = m
-	model.test_call(2, problems_sar, p_test_v1[s]['best_test'][m])
+	model.test_call(3, problems_sar, p_test_v1[s]['best_test'][m])
 	performance_models[s] = np.array(model.performance)
 	tmp2 = {int(i):[] for i in np.unique(model.length)}
 	for i in xrange(performance_models[s].shape[0]):		
@@ -177,7 +177,7 @@ def figsize(scale):
     inches_per_pt = 1.0/72.27                       # Convert pt to inch
     golden_mean = (np.sqrt(5.0)-1.0)/2.0            # Aesthetic ratio (you could change this)
     fig_width = fig_width_pt*inches_per_pt*scale    # width in inches
-    fig_height = fig_width*golden_mean*2.0              # height in inches
+    fig_height = fig_width*golden_mean*1.7              # height in inches
     fig_size = [fig_width,fig_height]
     return fig_size
 
@@ -206,20 +206,22 @@ from matplotlib.pyplot import *
 # THE PLOT FOR PERFORMANCES = SEARCH + REPEAT IS ALREADY MADE
 
 figure(figsize = figsize(1)) # width | height
-subplots_adjust(hspace = 0.18, wspace = 0.3)
+subplots_adjust(hspace = 0.19, wspace = 0.4)
 outer = gridspec.GridSpec(3, 2) 
 count = 1
 alpha = 0.2
 for s in monkeys.keys():	
 	gs = gridspec.GridSpecFromSubplotSpec(2,1,
 										subplot_spec = outer[monkeys.keys().index(s)], 
-										hspace = 0.2,
-										height_ratios = [1, 1.3])
+										hspace = 0.3,
+										height_ratios = [1, 1.3]
+										)
 	ax = subplot(gs[0])
 	ax.spines['right'].set_visible(False)
 	ax.spines['top'].set_visible(False)	
 	ax2 = ax.twinx()
 	ax2.spines['top'].set_visible(False)
+	ax2.spines['right'].set_visible(True)
 	ax2.spines['right'].set_bounds(0.0, 0.3)
 
 	ax.yaxis.set_ticks_position('left')
@@ -229,14 +231,14 @@ for s in monkeys.keys():
 	# print count
 	for t in range(1,6):		
 		x = np.arange(xpos[-1]+1.8, xpos[-1]+1.8+t+3)
-		ax.plot(x[-3:], performance_monkeys[s][t][0], 'o--', color = 'black', linewidth = 2)
+		ax.plot(x[-3:], performance_monkeys[s][t][0], 'o-', color = 'black', linewidth = 1, markersize = 2)
 		ax.fill_between(x[-3:], performance_monkeys[s][t][0]-performance_monkeys[s][t][1],
 						performance_monkeys[s][t][0]+performance_monkeys[s][t][1],
 						linewidth = 0.5, 
 						edgecolor = 'black',
 						facecolor = 'black',
 						alpha = alpha)
-		ax.plot(x[-3:], performance_models[s][t][0], 's-', linewidth = 2, color = colors_m[best_model[s]])
+		ax.plot(x[-3:], performance_models[s][t][0], 's-', linewidth = 1, markersize = 2, color = colors_m[best_model[s]])
 		ax.fill_between(x[-3:], performance_models[s][t][0]-performance_models[s][t][1],
 						performance_models[s][t][0]+performance_models[s][t][1],
 						linewidth = 0.5, 
@@ -246,7 +248,8 @@ for s in monkeys.keys():
 		ax.axvline(x[-3]-0.5, color = 'black', alpha = 0.5)
 		xpos.append(x[-1])
 		xtick_pos.append(x[-3]-0.5)
-		ax2.bar(x[-2], length_monkeys[s][t-1], 0.5, color = 'white', edgecolor = 'black', linewidth = 2.0, linestyle = '-', alpha = 0.8, hatch = '///')
+		# ax2.bar(x[-2], length_monkeys[s][t-1], 0.5, color = 'white', edgecolor = 'black', linewidth = 2.0, linestyle = '-', alpha = 0.8, hatch = '///')
+		ax2.bar(x[-2], length_monkeys[s][t-1], 0.5, color = 'white', edgecolor = 'black', linewidth = 1.0, alpha = 0.8, hatch = '///')
 		ax2.bar(x[-1]-0.5, length_models[s][t-1], 0.5, color = colors_m[best_model[s]], edgecolor = 'black', alpha = 0.8)		
 	
 	xticks(xtick_pos, tuple([str(i)+" Err" for i in xrange(5)]))	
@@ -254,10 +257,10 @@ for s in monkeys.keys():
 	ax2.set_xlim(-1,35)	
 	ax.locator_params(axis='y',nbins=3)
 	ax2.set_yticks([0, 0.3])
-	ax2.set_yticklabels(("0", ".3"), fontsize = 8)		
+	ax2.set_yticklabels(("0", ".3"))		
 	ax.set_ylabel("Accuracy")		
-	ax2.set_ylabel("Density", {'fontsize':9,'rotation':-90})
-	ax2.yaxis.set_label_coords(1.08, 0.2)
+	ax2.set_ylabel("Density", {'fontsize':4,'rotation':-90})
+	ax2.yaxis.set_label_coords(1.12, 0.2)
 	ax.set_title('Monkey '+s)
 	# annotate('Monkey '+s, (0.8,0.1), textcoords= 'axes fraction', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round'))
 	
@@ -269,14 +272,14 @@ for s in monkeys.keys():
 	xpos = [-1]
 	for t in xrange(1,6):				
 		x = np.arange(xpos[-1]+1.8, xpos[-1]+1.8+t+3)
-		plot(x, time_monkeys[s][t][0], 'o--', color = 'black', linewidth =2)
+		plot(x, time_monkeys[s][t][0], 'o-', color = 'black', linewidth =1, markersize = 2)
 		fill_between(x, time_monkeys[s][t][0]-time_monkeys[s][t][1],
 						time_monkeys[s][t][0]+time_monkeys[s][t][1],						
 						linewidth = 0, 
 						edgecolor = None,
 						facecolor = 'black',
 						alpha = alpha)	 
-		plot(x, time_models[s][t][0], 's-', color = colors_m[best_model[s]], linewidth = 2)
+		plot(x, time_models[s][t][0], 's-', color = colors_m[best_model[s]], linewidth = 1, markersize = 2)
 		fill_between(x, time_models[s][t][0]-time_models[s][t][1],
 						time_models[s][t][0]+time_models[s][t][1],						
 						linewidth = 0, 
@@ -292,8 +295,8 @@ for s in monkeys.keys():
 	ax3.set_ylabel("RT")
 	count = count + 1 if count%2 else count + 3
 	
-line2 = tuple([Line2D(range(1),range(1), linestyle = style_[m], marker = marker[m], alpha=1.0, color=colors_m[m], linewidth = 4) for m in ['fusion', 'mixture', 'monkeys']])
-legend(line2,tuple(['Entropy-based coordination', 'Weight-based mixture', 'Monkey']), bbox_to_anchor = (2.1, 2.0), fancybox = True, shadow = True)
+line2 = tuple([Line2D(range(1),range(1), linestyle = style_[m], marker = marker[m], alpha=1.0, color=colors_m[m], linewidth = 1, markersize = 2) for m in ['fusion', 'mixture', 'monkeys']])
+legend(line2,tuple(['Entropy-based coordination', 'Weight-based mixture', 'Monkey']), frameon = False, bbox_to_anchor = (2.3, 2.0), fancybox = False, shadow = True, handlelength = 3.5)
 
 savefig("fig5_choice_rt_v1_tche.pdf", dpi = 900, facecolor = 'white', bbox_inches = 'tight')
 
