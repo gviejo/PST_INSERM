@@ -428,13 +428,13 @@ with open("../papier/to_compare_value.pickle", 'wb') as f:
 with open("../papier/p_test_all_v.pickle", 'wb') as f:
 	pickle.dump(p_test)
 
-# # SAVING IN DROPBOX
-# with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/pareto2.pickle", 'wb') as f:
-# 	pickle.dump(pareto2, f)
-# with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/pareto3.pickle", 'wb') as f:
-# 	pickle.dump(pareto3, f)
-# with open("/home/viejo/Dropbox/Manuscrit/Chapitre5/monkeys/position.pickle", 'wb') as f:
-# 	pickle.dump(position, f)
+
+with open("../papier/pareto2.pickle", 'wb') as f:
+	pickle.dump(pareto2, f)
+with open("../papier/pareto3.pickle", 'wb') as f:
+	pickle.dump(pareto3, f)
+with open("../papier/position.pickle", 'wb') as f:
+	pickle.dump(position, f)
 
 # with open("p_test_last_set.pickle", 'wb') as f:
 # 	pickle.dump(p_test, f)

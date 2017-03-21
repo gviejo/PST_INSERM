@@ -39,7 +39,7 @@ colors_m = dict({'fusion':'#F1433F',
 				'monkeys':'black'})
 style_ = dict({'fusion':'-',
 				'mixture':'-',
-				'monkeys':'-'})
+				'monkeys':'--'})
 marker = dict({'fusion':'s',
 				'mixture':'s',
 				'monkeys':'o'})
@@ -131,7 +131,7 @@ for s in monkeys.keys():
 	m = p_test_v1[s]['best_test'].keys()[0]
 	model = models[m][1]
 	best_model[s] = m
-	model.test_call(3, problems_sar, p_test_v1[s]['best_test'][m])
+	model.test_call(1000, problems_sar, p_test_v1[s]['best_test'][m])
 	performance_models[s] = np.array(model.performance)
 	tmp2 = {int(i):[] for i in np.unique(model.length)}
 	for i in xrange(performance_models[s].shape[0]):		
@@ -160,6 +160,15 @@ for s in monkeys.keys():
 
 
 
+all_data = {'performance_models':performance_models,
+			'performance_monkeys':performance_monkeys,
+			'length_models':length_models,
+			'length_monkeys':length_monkeys,
+			'time_models':time_models,
+			'time_monkeys':time_monkeys}
+
+with open("fig5_choice_rt_v1_tche.pickle", 'wb') as f:
+	pickle.dump(all_data, f)
 
 ######################################################################################################
 # PLOT ###############################################################################################
@@ -197,7 +206,11 @@ pgf_with_latex = {                      # setup matplotlib to use latex for outp
     "pgf.preamble": [
         r"\usepackage[utf8x]{inputenc}",    # use utf8 fonts becasue your computer can handle it :)
         r"\usepackage[T1]{fontenc}",        # plots will be generated using this preamble
-        ]
+        ],
+    "lines.markeredgewidth" : 0.2,
+    "axes.linewidth"      	: 0.5,
+    "ytick.major.size"		: 1.5,
+    "xtick.major.size"		: 1.5
     }
 mpl.rcParams.update(pgf_with_latex)
 import matplotlib.gridspec as gridspec
@@ -231,7 +244,7 @@ for s in monkeys.keys():
 	# print count
 	for t in range(1,6):		
 		x = np.arange(xpos[-1]+1.8, xpos[-1]+1.8+t+3)
-		ax.plot(x[-3:], performance_monkeys[s][t][0], 'o-', color = 'black', linewidth = 1, markersize = 2)
+		ax.plot(x[-3:], performance_monkeys[s][t][0], 'o--', color = 'black', linewidth = 1, markersize = 2)
 		ax.fill_between(x[-3:], performance_monkeys[s][t][0]-performance_monkeys[s][t][1],
 						performance_monkeys[s][t][0]+performance_monkeys[s][t][1],
 						linewidth = 0.5, 
@@ -245,7 +258,7 @@ for s in monkeys.keys():
 						edgecolor = colors_m[best_model[s]],
 						facecolor = colors_m[best_model[s]], 
 						alpha = alpha)		
-		ax.axvline(x[-3]-0.5, color = 'black', alpha = 0.5)
+		ax.axvline(x[-3]-0.5, color = 'black', alpha = 0.5, linewidth = 0.5)
 		xpos.append(x[-1])
 		xtick_pos.append(x[-3]-0.5)
 		# ax2.bar(x[-2], length_monkeys[s][t-1], 0.5, color = 'white', edgecolor = 'black', linewidth = 2.0, linestyle = '-', alpha = 0.8, hatch = '///')
@@ -272,7 +285,7 @@ for s in monkeys.keys():
 	xpos = [-1]
 	for t in xrange(1,6):				
 		x = np.arange(xpos[-1]+1.8, xpos[-1]+1.8+t+3)
-		plot(x, time_monkeys[s][t][0], 'o-', color = 'black', linewidth =1, markersize = 2)
+		plot(x, time_monkeys[s][t][0], 'o--', color = 'black', linewidth =1, markersize = 2)
 		fill_between(x, time_monkeys[s][t][0]-time_monkeys[s][t][1],
 						time_monkeys[s][t][0]+time_monkeys[s][t][1],						
 						linewidth = 0, 

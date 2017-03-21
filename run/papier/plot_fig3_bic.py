@@ -3,7 +3,7 @@
 
 import numpy as np
 import cPickle as pickle
-import os
+import os, sys
 
 monkeys =   { 'g':12701,
               'm':34752,
@@ -34,6 +34,9 @@ legend_m = dict({'fusion':'Entropy-based coordination',
 with open("p_test_v1.pickle", 'rb') as f:
 	data = pickle.load(f)
 
+with open("to_compare_value.pickle", 'rb') as f:
+	value = pickle.load(f)
+
 new = {}
 m_order = models_to_id.keys()
 for s in data.keys():
@@ -43,7 +46,6 @@ for s in data.keys():
 		for i in tmp:
 			if m == i.split("_")[0]:
 				new[s].append(float(i.split("_")[1])*-1.0)
-
 
 
 

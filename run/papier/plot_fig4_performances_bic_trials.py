@@ -129,7 +129,13 @@ for s in monkeys.keys():
 	length_models[s] = length_models[s]/np.sum(length_models[s])
 
 
+all_data = {'performance_models':performance_models,
+			'performance_monkeys':performance_monkeys,
+			'length_models':length_models,
+			'length_monkeys':length_monkeys}
 
+with open("fig4_bic_choice_only_test.pickle", 'wb') as f:
+	pickle.dump(all_data, f)
 
 ######################################################################################################
 # PLOT ###############################################################################################
@@ -165,8 +171,12 @@ pgf_with_latex = {                      # setup matplotlib to use latex for outp
     "pgf.preamble": [
         r"\usepackage[utf8x]{inputenc}",    # use utf8 fonts becasue your computer can handle it :)
         r"\usepackage[T1]{fontenc}",        # plots will be generated using this preamble
-        ]
-    }
+        ],
+    "lines.markeredgewidth" : 0.2,
+    "axes.linewidth"      	: 0.5,
+    "ytick.major.size"		: 1.5,
+    "xtick.major.size"		: 1.5
+    }    
 mpl.rcParams.update(pgf_with_latex)
 import matplotlib.gridspec as gridspec
 from matplotlib.pyplot import *
