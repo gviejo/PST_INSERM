@@ -15,10 +15,25 @@ import numpy as np
 import multiprocessing
 import itertools
 sys.path.append("../sferes/last_set_models/")
-from fusion_1 import fusion_1
-from mixture_1 import mixture_1
-from bayesian_1 import bayesian_1
-from qlearning_1 import qlearning_1
+from 	 fusion_1 import    fusion_1
+from 	mixture_1 import   mixture_1
+from   bayesian_1 import  bayesian_1
+from  qlearning_1 import qlearning_1
+from 	 fusion_2 import    fusion_2
+from 	mixture_2 import   mixture_2
+from  qlearning_2 import qlearning_2
+from 	 fusion_3 import    fusion_3
+from 	mixture_3 import   mixture_3
+from  qlearning_3 import qlearning_3
+from 	 fusion_4 import    fusion_4
+from 	mixture_4 import   mixture_4
+from  qlearning_4 import qlearning_4
+from 	 fusion_5 import    fusion_5
+from 	mixture_5 import   mixture_5
+from   bayesian_5 import  bayesian_5
+# from 	 fusion_6 import    fusion_6
+# from 	mixture_7 import   mixture_7
+# from 	 fusion_7 import    fusion_7
 
 sys.path.append("../../src")
 from Models import *
@@ -28,58 +43,49 @@ from Sferes import pareto
 from itertools import *
 from time import sleep
 import cPickle as pickle
-
+import copy 
 
 
 # ------------------------------------
 # FUNCTION FOR MULTIPROCESSING
 # ------------------------------------
+nworker = 6
 def worker_test_star(a_b):
 	return worker_test(*a_b)
 
-def worker_test(w, s, value_tche):
-	# pareto4 = model | run | gen | ind |
-	# for 8 jobs
-	cut = np.sort(value_tche)[int(len(value_tche)/4.)]
-	points = np.where(value_tche < cut)[0]	
-	pos = np.array_split(points, 8)[w]
-	value3 = np.zeros((len(pos),2))
-	for t in pos:		
-		l = pareto4[s][t]		
-		m = id_to_models[int(l[0])]
-		run_ = int(l[1])
-		gen_ = int(l[2])
-		num_ = int(l[3])
-		data_run = data[s][1][m][run_]
-		tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]		
-		p = dict(zip(p_order[m],tmp[4:]))
-		model = vmodels[m][1]
-		model.test_call(10, problems_sar[s], p)				
-		performance = {int(i):[] for i in np.unique(model.length)}
-		timings = {int(i):[] for i in np.unique(model.length)}
-		for i in xrange(model.performance.shape[0]):		
-			for j in np.unique(model.length[i]):
-				index = model.length[i] == int(j)
-				performance[int(j)].append(model.performance[i,index])					
-		for i in performance.iterkeys():
-			performance[i] = np.vstack(performance[i])
-			performance[i] = np.mean(performance[i], 0)
-		timing = model.timing
-		fit = model.sferes_call(np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt"), np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt"), p)
-		for k in timing:
-			timing[k] = timing[k] - model.rt_align[0]
-			timing[k] = timing[k] / model.rt_align[1]				
-		for k in timings.iterkeys():		
-			timings[k] = timing[k].mean(0)		
-		for k in xrange(1,6):
-			if performance.has_key(k):
-				value3[np.where(pos == t)[0][0], 0] += np.sum(np.power(performance_monkeys[s][k]-performance[k], 2))
-			if timings.has_key(k): 
-				value3[np.where(pos == t)[0][0], 1] += np.sum(np.power(time_monkeys[s][k]-timings[k], 2))
+def worker_test(w, pos_, s, p_to_test_):
+	value_ = np.zeros((len(pos_),2))
+
+	data_1 = np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt")
+	data_2 = np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt")
+
+	for t in pos_:
+		m, v = p_to_test_[t].keys()[0].split(".") # model, version
+		p = p_to_test_[t][p_to_test_[t].keys()[0]]		
 		
-		print "worker ", w, "| line ", t, " | value ", value3[np.where(pos == t)[0][0], 0], " ", np.where(pos == t)[0][0]		
-	return np.hstack((np.vstack(pos), value3))
+		model = copy.deepcopy(vmodels[m][int(v)])
+		model.test_call(3, problems_sar[s], p)
+
+		fit = model.sferes_call(data_1, data_2, p)
+		model.timing = model.timing - model.rt_align[0]
+		model.timing = model.timing / model.rt_align[1]
+		performance = {}
+		timing = {}
+		for i in xrange(5):
+			index = model.length == i
+			if index.sum():
+				performance[i] = np.mean(model.performance[index], 0)
+				timing[i] = np.mean(model.timing[index][:,0:i+4], 0)
+		
+				value_[np.where(pos_ == t)[0][0], 0] += np.sum(np.power(performance_monkeys[s][i+1]-performance[i], 2))		
+				value_[np.where(pos_ == t)[0][0], 1] += np.sum(np.power(time_monkeys[s][i+1]-timing[i], 2))
+		
+		print "worker ", w, "| line ", t, " | value ", value_[np.where(pos_ == t)[0][0], 0], " ", np.where(pos_ == t)[0][0]		
+	return np.hstack((np.vstack(pos_), value_))
 	
+# -----------------------------------
+# VARIOUS
+# -----------------------------------
 
 models = dict({"fusion":FSelection(),
 					"qlearning":QLearning(),
@@ -310,22 +316,59 @@ for s in monkeys: # singe
 	gen_ = int(best_ind[3])
 	num_ = int(best_ind[4])
 
-	# print s
-	# print "set ", set_
-	# print "run ", run_
-	# print "gen ", gen_
-	# print "num ", num_
-
 	data_run = data[s][set_][m][run_]
 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
-	p_test[s+str(set_)] = dict({m:dict(zip(p_order[m],tmp[4:]))})                        
-	position[s+str(set_)] = best_ind[5:]
+	p_test[s+str(set_)] = {'best_tche':dict({m:dict(zip(p_order[m],tmp[4:]))})}
+	to_compare_value[s] = {'tche':value}
+	position[s+str(set_)+'_tche'] = best_ind[5:]
 
 # ------------------------------------
 # SELECTION BY TESTING PARAMETERS
 # ------------------------------------
 	# FOR ALL SET
 	# must call model testing files as determined by pareto3 = [model | set | run | gen | num | fit1 | fit2]
+	# take only half percent of solutions according to value of tche		
+	pool = multiprocessing.Pool(processes = nworker)
+	cut = np.sort(value)[int(len(value)/2.)]
+	points = np.where(value<cut)[0]
+	pos = np.array_split(points, nworker)
+	# find parameter for all point first; index dict by points array
+	p_to_test = {}
+	for t in points:
+		l = pareto3[s][t]
+		m = id_to_models[int(l[0])]
+		set_ = int(best_ind[1])
+		run_ = int(best_ind[2])
+		gen_ = int(best_ind[3])
+		num_ = int(best_ind[4])		
+		data_run = data[s][set_][m][run_]
+		tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+		p_to_test[t] = { m+"."+str(set_) :  dict(zip(p_order[m],tmp[4:])) }
+
+	value4 = pool.map(worker_test_star, itertools.izip(range(nworker), pos, itertools.repeat(s), itertools.repeat(p_to_test)))
+	value4 = np.vstack(np.array(value4))
+	value4[:,1:] = (value4[:,1:] - np.min(value4[:,1:], 0))/(np.max(value4[:,1:], 0) - np.min(value4[:,1:], 0))
+	value4 = np.vstack((value4[:,0], np.sum(value4[:,1:], 1))).transpose()
+	ind_best_point = int(value4[np.argmin(value4[:,1]), 0])	
+	# pareto 3 has points with negative value must search in the pareto3 index	
+	tmp = pareto3[s][:,5:]
+	x = np.arange(len(tmp))
+	index = (tmp[:,0]>0)*(tmp[:,1]>0)
+	ind_best_point = x[index][ind_best_point]
+	best_ind = pareto3[s][ind_best_point]
+
+	# from data dictionnary
+	m = id_to_models[int(best_ind[0])]
+	set_ = int(best_ind[1])
+	run_ = int(best_ind[2])
+	gen_ = int(best_ind[3])
+	num_ = int(best_ind[4])
+	data_run = data[s][set_][m][run_]
+	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+	p_test[s+str(set_)] = {'best_test':dict({m:dict(zip(p_order[m],tmp[4:]))})}
+	to_compare_value[s] = {'test':value}
+	position[s+str(set_)+'_test'] = best_ind[5:]
+	
 	
 
 # ------------------------------------
@@ -388,17 +431,38 @@ for s in monkeys: # singe
 	data_run = data[s][1][m][run_]
 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
 	p_test_v1[s] = {'best_tche':dict({m:dict(zip(p_order[m],tmp[4:]))})}                        
-	to_compare_value[s] = {'tche':value}
+	to_compare_value[s+"1"] = {'tche':value}
 # ------------------------------------
 # SELECTION BY TESTING PARAMETERS SET 1 only the best 25 percent of solutions according to value of tcheby
 # ------------------------------------
 	# pareto4 = model | run | gen | ind |	
-	pool = multiprocessing.Pool(processes = 8)
-	value2 = pool.map(worker_test_star, itertools.izip(range(8), itertools.repeat(s), itertools.repeat(value))) 	
+	pool = multiprocessing.Pool(processes = nworker)
+	cut = np.sort(value)[int(len(value)/6.)]
+	points = np.where(value<cut)[0]
+	pos = np.array_split(points, nworker)
+	# find parameter for all point first; index dict by points array
+	p_to_test = {}
+	for t in points:
+		l = pareto4[s][t]
+		m = id_to_models[int(l[0])]
+		run_ = int(l[1])
+		gen_ = int(l[2])
+		num_ = int(l[3])
+		data_run = data[s][1][m][run_]		
+		tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+		p_to_test[t] = { m+".1" :  dict(zip(p_order[m],tmp[4:])) }
+
+
+	value2 = pool.map(worker_test_star, itertools.izip(range(nworker), pos, itertools.repeat(s), itertools.repeat(p_to_test)))	
 	value2 = np.vstack(np.array(value2))
 	value2[:,1:] = (value2[:,1:] - np.min(value2[:,1:], 0))/(np.max(value2[:,1:], 0) - np.min(value2[:,1:], 0))
 	value2 = np.vstack((value2[:,0], np.sum(value2[:,1:], 1))).transpose()
 	ind_best_point = int(value2[np.argmin(value2[:,1]), 0])
+	# pareto 4 has points with negative value
+	tmp = pareto4[s][:,5:]
+	x = np.arange(len(tmp))
+	index = (tmp[:,0]>0)*(tmp[:,1]>0)
+	ind_best_point = x[index][ind_best_point]
 	best_ind = pareto4[s][ind_best_point]
 	m = id_to_models[int(best_ind[0])]
 	run_ = int(best_ind[1])
@@ -409,7 +473,7 @@ for s in monkeys: # singe
 	p_test_v1[s]['best_test'] = dict({m:dict(zip(p_order[m],tmp[4:]))})                        	
 	tmp = np.ones(len(pareto4[s]))
 	tmp[value2[:,0].astype('int')] = value2[:,1]
-	to_compare_value[s]['test'] = tmp
+	to_compare_value[s+"1"]['test'] = tmp
 # ------------------------------------
 # BEST CHOICE & RT SET 1
 # ------------------------------------
@@ -420,7 +484,7 @@ for s in monkeys: # singe
 	p_test_v1[s]['best_choice'] = tmp	
 	
 
-# # SAVING IN ../papier/	
+# # SAVING IN ../papier/
 with open("../papier/p_test_v1.pickle",'wb') as f:
 	pickle.dump(p_test_v1, f)
 with open("../papier/to_compare_value.pickle", 'wb') as f:

@@ -7,8 +7,9 @@ import sys
 import os
 import numpy as np
 from pylab import *
+import cPickle as pickle
 sys.path.append("../src")
-
+import time
 
 from bayesian_1 import bayesian_1
 from qlearning_1 import qlearning_1
@@ -33,25 +34,28 @@ parameters = {'length':5,
 				'weight':0.5,
 				'kappa':0.5,
 				'shift':0.5}
-parameters = {"beta":10.0, # temperature for final decision                            
-              'alpha':0.5,
-              "length":4,
-              "threshold":10.0, # sigmoide parameter
-              "noise":0.1,
-              "gain":0.01,
-              "sigma":1.0,
-              "gamma":1.0, # temperature for entropy from qlearning soft-max
-              "kappa":1.0,
-              "shift":1.0}				
+parameters = {"beta"		:3.0, # temperature for final decision                            
+              'alpha'		:0.5,
+              "length"		:10,
+              "threshold"	:10.0, # sigmoide parameter
+              "noise":		0.1,
+              "gain":		1.01,
+              "sigma"		:1.0,
+              "gamma"		:3.0, # temperature for entropy from qlearning soft-max
+              "kappa"		:0.1,
+              "shift"		:1.0}				
+
+start = time.time()
 
 
-list_of_problems = np.random.randint(4, size = 10)
+with open("problems_sar.pickle", 'rb') as f:
+	problems_sar = pickle.load(f)
 
 model = fusion_1()
-model.test_call(list_of_problems, parameters)
+model.test_call(1, problems_sar['p'], parameters)
 
 
-
-
+end = time.time()
+print start - end
 
 

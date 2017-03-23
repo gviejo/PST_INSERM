@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
 	tmp = np.exp(tmp0*float(beta))
 	return  tmp/float(np.sum(tmp))
 
-class fusion_2():
+class fusion_4():
 	""" fusion strategy
 	"""
 	def __init__(self):
@@ -54,9 +54,7 @@ class fusion_2():
 			if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
 					# START BLOC
 					self.problem = self.sari[i][1]
-					self.n_element = 0
-					# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-					self.values_mf = np.zeros(4)					
+					self.n_element = 0					
 
 
 			# START TRIAL
@@ -270,7 +268,7 @@ class fusion_2():
 		self.list_of_problems = list_of_problems[list_of_problems[:,0] == 1,1]
 		self.N = len(self.list_of_problems)
 		self.performance = np.zeros((nb_repeat, len(self.list_of_problems), 3))
-		self.timing = np.zeros((nb_repeat, len(self.list_of_problems), 8))
+		self.timing = {i:[] for i in xrange(1, 20)}
 		self.length = np.zeros((nb_repeat, len(self.list_of_problems)))
 
 		for k in xrange(nb_repeat):
@@ -293,10 +291,10 @@ class fusion_2():
 				self.n_element = 0
 				self.values_mf = np.zeros(self.n_action)
 				r = 0
+				tmp = [] # for saving rt timing in the search phase
 
 				#SEARCH PHASE
-				count = 0
-				while r == 0 and count < 5:
+				while r == 0:
 					self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
 					self.Hf = self.computeEntropy(self.p_a_mf)
 					# BAYESIAN CALL
@@ -308,45 +306,41 @@ class fusion_2():
 					while self.sigmoideModule():
 						self.inferenceModule()
 						self.evaluationModule()                
+						
+					self.fusionModule()                			
+					H = self.computeEntropy(self.p_a_final)
+					self.current_action = int(self.sample(self.p_a_final))
+					r = 1 if self.current_action == self.problem else 0
+					tmp.append(float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H))
+					self.updateValue(r)							
+									
+				#REPEAT PHASE
+				for j in xrange(3):
+					r = 0
+					self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
+					self.Hf = self.computeEntropy(self.p_a_mf)
+					# BAYESIAN CALL
+					self.p = self.uniform[:,:]
+					self.Hb = self.max_entropy
+					self.nb_inferences = 0
+					self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        	            
+					while self.sigmoideModule():  
+						self.inferenceModule()
+						self.evaluationModule()	                
 
 					self.fusionModule()
 					self.current_action = int(self.sample(self.p_a_final))
-
 					r = 1 if self.current_action == self.problem else 0
+					# print self.p_a_final
 					H = self.computeEntropy(self.p_a_final)					
-					self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-					
-					self.updateValue(r)
-					count += 1							
+					self.updateValue(r)	        			
+					self.performance[k,i,j] = r
+					tmp.append(float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H))					
 				
-				if r == 1: # to avoid running useless trial longer than 5 in search
-					self.length[k,i] = count-1			
-					#REPEAT PHASE
-					for j in xrange(3):
-						r = 0
-						self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
-						self.Hf = self.computeEntropy(self.p_a_mf)
-						# BAYESIAN CALL
-						self.p = self.uniform[:,:]
-						self.Hb = self.max_entropy
-						self.nb_inferences = 0
-						self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        	            
-						while self.sigmoideModule():  
-							self.inferenceModule()
-							self.evaluationModule()	                
-
-						self.fusionModule()
-						self.current_action = int(self.sample(self.p_a_final))
-						r = 1 if self.current_action == self.problem else 0
-						# print self.p_a_final
-						H = self.computeEntropy(self.p_a_final)					
-						self.updateValue(r)	        			
-						self.performance[k,i,j] = r
-						self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-
-						count += 1
-				else :
-					self.length[k,i] = -1
+				self.timing[len(tmp)-3].append(tmp)
+				self.length[k,i] = len(tmp)-3
+		for k in self.timing.iterkeys():
+			self.timing[k] = np.array(self.timing[k])
 
 	def computeEntropy(self, p):
 		np.seterr(divide='ignore')
@@ -409,6 +403,6 @@ class fusion_2():
 		self.delta = float(r) + self.parameters['shift']*np.max(self.values_mf) - self.values_mf[self.current_action]
 		self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                
 		# forgetting
-		# index = range(self.n_action)
-		# index.pop(int(self.current_action))        
-		# self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
+		index = range(self.n_action)
+		index.pop(int(self.current_action))        
+		self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    

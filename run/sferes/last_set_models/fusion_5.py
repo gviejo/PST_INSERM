@@ -283,7 +283,7 @@ class fusion_5():
 		self.list_of_problems = list_of_problems[list_of_problems[:,0] == 1,1]
 		self.N = len(self.list_of_problems)
 		self.performance = np.zeros((nb_repeat, len(self.list_of_problems), 3))
-		self.timing = {i:[] for i in xrange(1, 20)}
+		self.timing = np.zeros((nb_repeat, len(self.list_of_problems), 8))
 		self.length = np.zeros((nb_repeat, len(self.list_of_problems)))
 
 		for k in xrange(nb_repeat):
@@ -299,6 +299,8 @@ class fusion_5():
 			self.Hf = self.max_entropy    
 			self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))			
 			self.p_a_final = np.zeros(self.n_action)
+			self.p = self.uniform[:,:]			
+			self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        								
 
 			for i in xrange(self.N):
 				# START BLOC
@@ -306,56 +308,74 @@ class fusion_5():
 				self.n_element = 0
 				self.values_mf = np.zeros(self.n_action)
 				r = 0
-				tmp = [] # for saving rt timing in the search phase
 
 				#SEARCH PHASE
-				while r == 0:
+				count = 0
+				while r == 0 and count < 5:
 					self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
 					self.Hf = self.computeEntropy(self.p_a_mf)
-					# BAYESIAN CALL
-					self.p = self.uniform[:,:]
-					self.Hb = self.max_entropy
-					self.nb_inferences = 0
-					self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        					
+					
+					# BAYESIAN CALL									
+					self.nb_inferences = 0				
+					# NO SWEEPING
+					if count == 0:
+						self.p = self.uniform[:,:]
+						self.Hb = self.max_entropy
+						self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        					
 	
 					while self.sigmoideModule():
 						self.inferenceModule()
 						self.evaluationModule()                
-						
-					self.fusionModule()                			
-					H = self.computeEntropy(self.p_a_final)
-					self.current_action = int(self.sample(self.p_a_final))
-					r = 1 if self.current_action == self.problem else 0
-					tmp.append(float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H))
-					self.updateValue(r)							
-									
-				#REPEAT PHASE
-				for j in xrange(3):
-					r = 0
-					self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
-					self.Hf = self.computeEntropy(self.p_a_mf)
-					# BAYESIAN CALL
-					self.p = self.uniform[:,:]
-					self.Hb = self.max_entropy
-					self.nb_inferences = 0
-					self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        	            
-					while self.sigmoideModule():  
-						self.inferenceModule()
-						self.evaluationModule()	                
 
 					self.fusionModule()
 					self.current_action = int(self.sample(self.p_a_final))
+
 					r = 1 if self.current_action == self.problem else 0
-					# print self.p_a_final
 					H = self.computeEntropy(self.p_a_final)					
-					self.updateValue(r)	        			
-					self.performance[k,i,j] = r
-					tmp.append(float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H))					
+					self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+					
+					self.updateValue(r)
+					# SWEEPING
+					if count and r==0:
+						self.p = self.uniform[:,:]                
+						self.Hb = self.max_entropy
+						self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        
+						self.nb_inferences = 0
+						for j in xrange(self.n_element):
+							self.inferenceModule()
+						self.evaluationModule() 			
+
+					count += 1							
 				
-				self.timing[len(tmp)-3].append(tmp)
-				self.length[k,i] = len(tmp)-3
-		for k in self.timing.iterkeys():
-			self.timing[k] = np.array(self.timing[k])
+				if r == 1: # to avoid running useless trial longer than 5 in search
+					self.length[k,i] = count-1			
+					#REPEAT PHASE
+					for j in xrange(3):
+						r = 0
+						self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
+						self.Hf = self.computeEntropy(self.p_a_mf)
+						# BAYESIAN CALL
+						self.p = self.uniform[:,:]
+						self.Hb = self.max_entropy
+						self.nb_inferences = 0
+						self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        	            
+						while self.sigmoideModule():  
+							self.inferenceModule()
+							self.evaluationModule()	                
+
+						self.fusionModule()
+						self.current_action = int(self.sample(self.p_a_final))
+						r = 1 if self.current_action == self.problem else 0
+						# print self.p_a_final
+						H = self.computeEntropy(self.p_a_final)					
+						self.updateValue(r)	        			
+						self.performance[k,i,j] = r
+						self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+
+						count += 1
+				else :
+					self.length[k,i] = -1
+
 
 	def computeEntropy(self, p):
 		np.seterr(divide='ignore')

@@ -251,7 +251,7 @@ for s in monkeys.keys():
 						edgecolor = 'black',
 						facecolor = 'black',
 						alpha = alpha)
-		ax.plot(x[-3:], performance_models[s][t][0], 's-', linewidth = 1, markersize = 2, color = colors_m[best_model[s]])
+		ax.plot(x[-3:], performance_models[s][t][0], 'o-', linewidth = 1, markersize = 2, color = colors_m[best_model[s]])
 		ax.fill_between(x[-3:], performance_models[s][t][0]-performance_models[s][t][1],
 						performance_models[s][t][0]+performance_models[s][t][1],
 						linewidth = 0.5, 
@@ -292,7 +292,7 @@ for s in monkeys.keys():
 						edgecolor = None,
 						facecolor = 'black',
 						alpha = alpha)	 
-		plot(x, time_models[s][t][0], 's-', color = colors_m[best_model[s]], linewidth = 1, markersize = 2)
+		plot(x, time_models[s][t][0], 'o-', color = colors_m[best_model[s]], linewidth = 1, markersize = 2)
 		fill_between(x, time_models[s][t][0]-time_models[s][t][1],
 						time_models[s][t][0]+time_models[s][t][1],						
 						linewidth = 0, 
