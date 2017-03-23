@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
 	tmp = np.exp(tmp0*float(beta))
 	return  tmp/float(np.sum(tmp))
 
-class fusion_4():
+class fusion_6():
 	""" fusion strategy
 	"""
 	def __init__(self):
@@ -39,74 +39,85 @@ class fusion_4():
 		self.mean_rt = mean_rt
 		self.value = np.zeros(self.N)
 		self.reaction = np.zeros(self.N)        
-		self.values_mf = np.zeros(self.n_action)
-		self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
-		self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
-		self.nb_inferences = 0
-		self.n_element = 0
-		self.Hb = self.max_entropy
-		self.Hf = self.max_entropy    
-		self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
-		self.problem = self.sari[0,1]
-		self.p_a_final = np.zeros(self.n_action)
-		# self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
-		for i in xrange(self.N):                    
-			if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
-					# START BLOC
-					self.problem = self.sari[i][1]
-					self.n_element = 0					
+		self.mean_entropy_bwm = np.zeros((30,2))
+		self.mean_entropy_ql = np.zeros((30,2))
+		self.entropy_ql = np.zeros(self.N)
+		self.entropy_bwm = np.zeros(self.N)
 
-
-			# START TRIAL
-			self.current_action = int(self.sari[i][2]-1)
-			r = self.sari[i][0]            
-
-			self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
-			self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
-			# BAYESIAN CALL
-			self.p = self.uniform[:,:]
-			self.Hb = self.max_entropy
+		for c in xrange(2):
+			self.values_mf = np.zeros(self.n_action)
+			self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
+			self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
 			self.nb_inferences = 0
-			self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
-			self.p_decision = np.zeros(int(self.parameters['length'])+1)
-			self.p_retrieval= np.zeros(int(self.parameters['length'])+1)
-			self.p_sigmoide = np.zeros(int(self.parameters['length'])+1)
-			self.p_ak = np.zeros(int(self.parameters['length'])+1)        
-			q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
-			reaction = np.zeros(int(self.parameters['length'])+1)
-			# START            
-			self.sigmoideModule()
-			self.p_sigmoide[0] = self.pA
-			self.p_decision[0] = self.pA
-			self.p_retrieval[0] = 1.0-self.pA
-			# print "mf = ", self.values_mf
+			self.n_element = 0
+			self.Hb = self.max_entropy
+			self.Hf = self.max_entropy    
+			self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
+			self.problem = self.sari[0,1]
+			self.p_a_final = np.zeros(self.n_action)
+			index2 = 0
+			for i in xrange(self.N):                    
+				if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
+						# START BLOC
+						self.problem = self.sari[i][1]
+						self.n_element = 0
+						index2 = 0			
 
-			self.fusionModule()
-			self.p_ak[0] = self.p_a_final[self.current_action]            
-			H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-			reaction[0] = float(H)        
-			for j in xrange(self.n_element):            
-				self.inferenceModule()
-				self.evaluationModule()				
-				self.fusionModule()                
-				self.p_ak[j+1] = self.p_a_final[self.current_action]                
-				H = self.computeEntropy(self.p_a_final)
-				N = self.nb_inferences+1.0
-				reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
-				# reaction[j+1] = H
+
+				# START TRIAL
+				self.current_action = int(self.sari[i][2]-1)
+				r = self.sari[i][0]            
+
+				self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
+				self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
+				# BAYESIAN CALL
+				self.p = self.uniform[:,:]
+				self.Hb = self.max_entropy
+				self.nb_inferences = 0
+				self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+				self.p_decision = np.zeros(int(self.parameters['length'])+1)
+				self.p_retrieval= np.zeros(int(self.parameters['length'])+1)
+				self.p_sigmoide = np.zeros(int(self.parameters['length'])+1)
+				self.p_ak = np.zeros(int(self.parameters['length'])+1)        
+				q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
+				reaction = np.zeros(int(self.parameters['length'])+1)
+				# START            
+				Hmetab = 0
+				Hmetaf = 0
+				if c == 1:
+					Hmetab = mean_entropy_bwm[index2][]
 				self.sigmoideModule()
-				self.p_sigmoide[j+1] = self.pA            
-				self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
-				self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
-				# print j+1, " p_ak=", self.p_ak[j+1], " p_decision=", self.p_decision[j+1], " p_retrieval=", self.p_retrieval[0]
-			
-			# print np.dot(self.p_decision,self.p_ak)
-			self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
-			# print self.value[i]
-			# print self.p_decision
-			self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
-			# print self.reaction[i]
-			self.updateValue(r)
+				self.p_sigmoide[0] = self.pA
+				self.p_decision[0] = self.pA
+				self.p_retrieval[0] = 1.0-self.pA
+				# print "mf = ", self.values_mf
+
+				self.fusionModule()
+				self.p_ak[0] = self.p_a_final[self.current_action]            
+				H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
+				reaction[0] = float(H)        
+				for j in xrange(self.n_element):            
+					self.inferenceModule()
+					self.evaluationModule()				
+					self.fusionModule()                
+					self.p_ak[j+1] = self.p_a_final[self.current_action]                
+					H = self.computeEntropy(self.p_a_final)
+					N = self.nb_inferences+1.0
+					reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
+					# reaction[j+1] = H
+					self.sigmoideModule()
+					self.p_sigmoide[j+1] = self.pA            
+					self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
+					self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
+					# print j+1, " p_ak=", self.p_ak[j+1], " p_decision=", self.p_decision[j+1], " p_retrieval=", self.p_retrieval[0]
+				
+				# print np.dot(self.p_decision,self.p_ak)
+				self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
+				# print self.value[i]
+				# print self.p_decision
+				self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
+				# print self.reaction[i]
+				self.updateValue(r)
 
 		# ALIGN TO MEDIAN
 		self.rt_align = np.array([np.median(self.reaction), np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25)])

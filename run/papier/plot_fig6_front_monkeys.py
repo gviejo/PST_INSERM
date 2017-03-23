@@ -13,6 +13,10 @@ with open("pareto2.pickle", 'rb') as handle:
 
 with open("position.pickle", 'rb') as handle:
 	pos = pickle.load(handle)
+
+with open("to_compare_value.pickle", 'rb') as handle:
+	value = pickle.load(handle)
+
 tmp = {}
 for k in pos.iterkeys():
 	tmp[k[0]] = pos[k]
@@ -39,8 +43,8 @@ pgf_with_latex = {                      # setup matplotlib to use latex for outp
     "font.serif": [],                   # blank entries should cause plots to inherit fonts from the document
     "font.sans-serif": [],
     "font.monospace": [],
-    "axes.labelsize": 6,               # LaTeX default is 10pt font.
-    "font.size": 6,
+    "axes.labelsize": 5,               # LaTeX default is 10pt font.
+    "font.size": 5,
     "legend.fontsize": 6,               # Make the legend/label fonts a little smaller
     "xtick.labelsize": 4,
     "ytick.labelsize": 4,
@@ -95,18 +99,17 @@ n_subjects = len(data.keys())
 subjects= data.keys()
 
 for i in xrange(n_subjects):
-	gs = gridspec.GridSpecFromSubplotSpec(1,3,subplot_spec = outer[i])
+	gs = gridspec.GridSpecFromSubplotSpec(1,3,subplot_spec = outer[i], wspace = 0.32)
 	# PARETO
 	ax1 = subplot(gs[0])
 	ax1.get_xaxis().tick_bottom()
 	ax1.get_yaxis().tick_left()
 	s = subjects[i]
-	for m in data[s].keys():	
-		print s, m
+	for m in data[s].keys():			
 		positif = (data[s][m][:,4]>0)*(data[s][m][:,5]>0)		
 		# les sets dispo dans le front de pareto
 		# sets = np.unique(data[s][m][positif,0])
-		ax1.plot(data[s][m][positif,4], data[s][m][positif,5], '-', color = colors_m[m], linewidth = lwidth)
+		ax1.plot(data[s][m][positif,4], data[s][m][positif,5], '-o', color = colors_m[m], linewidth = lwidth, markersize = msize, markeredgewidth = 0.0)
 		# for j in sets:
 		# 	index = (data[s][m][:,0] == j)*positif
 		# 	ax1.plot(data[s][m][index,4], data[s][m][index,5] , markers[int(j-1)], markerfacecolor = 'white',  markeredgewidth = 1.0, markersize = msize, markeredgecolor = colors_m[m])			
@@ -120,12 +123,10 @@ for i in xrange(n_subjects):
 	else:
 		ax1.set_xlim(0,1)
 		ax1.set_ylim(0,1)
-
-	ax1.xaxis.labelpad = -2
 	
-	ax1.set_xlabel("Choice")
-	ax1.set_ylabel("RT")
-	ax1.set_title("Monkey "+subjects[i], y = 0.98)
+	ax1.set_xlabel("Fit to choice")
+	ax1.set_ylabel("Fit to RT")
+	# ax1.set_title("Monkey "+subjects[i], y = 0.98)
 
 	# BAR
 	ax2 = subplot(gs[1])
@@ -140,15 +141,40 @@ for i in xrange(n_subjects):
 		for j in np.arange(1, 8):			
 			y[int(j-1)] = np.sum(data[s][m][positif,0] == j)
 		y = y/y.sum()			
-		ax2.bar(x, y, 0.4, color = colors_m[m], linewidth = 0)
-		x = x + 0.4
+		ax2.bar(x, y, 0.3, color = colors_m[m], linewidth = 0)
+		x = x + 0.3
 	
-	ax2.set_xticks(x-0.4, tuple(np.arange(1, 8).astype(str)))
-
-
+	ax2.set_xticks(np.arange(1,8)+0.3)
+	ax2.set_xticklabels(np.arange(1,8).astype('str'))
+	ax2.set_xlabel("Variation")
+	ax2.set_xlim(0.9, 8)
+	ax2.locator_params(axis='y',nbins=4)	
+	ax2.set_ylabel("\%")
+	
+	ax2.set_title("Monkey "+subjects[i], y = 0.98)
 
 	# VALUE
-	ax3 = subplot(gs[2])
+	ax3 = subplot(gs[2])	
+	ax3.spines['top'].set_visible(False)
+	ax3.yaxis.set_ticks_position('left')
+	ax3.xaxis.set_ticks_position('bottom')		
+	# value[s]['test'] = value[s]['test'] - value[s]['tche'].min()-value[s]['test'].min()
+	index = value[s]['test'] != value[s]['test'][0]
+	x = np.arange(len(value[s]['test']))
+	ax3.plot(x, value[s]['tche'], '-', linewidth = lwidth*2, alpha = 0.5, color = 'black')	
+	ax4 = ax3.twinx()	
+	ax4.plot(x[index], value[s]['test'][index], '-', linewidth = 0.5, alpha = 1, color = 'black')			
+	ax4.locator_params(axis = 'y', nbins = 4)
+	ax4.set_ylabel("Least Square error", {'rotation':-90})
+	ax3.set_ylabel("Ranking value")
+	ax3.set_xlabel("Fit to Choice <-> Fit to RT")
+	# ax3.set_xticks([])		
+	ax3.get_xaxis().set_tick_params(direction='out')
+	ax3.set_xticks([np.argmin(value[s]['tche']), np.argmin(value[s]['test'])])
+	ax3.set_xticklabels(['R', 'L'])
+
+
+
 
 # line2 = tuple([Line2D(range(1),range(1),alpha=1.0,color=colors_m[m], linewidth = 2) for m in colors_m.keys()])
 # figlegend(line2,tuple(legend_m.values()), loc = 'lower right', bbox_to_anchor = (0.95, 0.05))
