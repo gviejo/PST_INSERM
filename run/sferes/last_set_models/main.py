@@ -16,6 +16,8 @@ from qlearning_1 import qlearning_1
 from mixture_1 import mixture_1
 from fusion_1 import fusion_1
 
+from fusion_6 import fusion_6
+
 parameters = {'length':4,
 				'threshold':1.0,
 				'noise':0.01,
@@ -51,8 +53,15 @@ start = time.time()
 with open("problems_sar.pickle", 'rb') as f:
 	problems_sar = pickle.load(f)
 
-model = fusion_1()
-model.test_call(1, problems_sar['p'], parameters)
+s = 'p'
+data_1 = np.genfromtxt("../../../data/data_txt_3_repeat/"+s+".txt")
+data_2 = np.genfromtxt("../../../data/data_txt_3_repeat/"+s+"_rt_reg.txt")
+
+
+model = fusion_6()
+fit = model.sferes_call(data_1, data_2, parameters)	
+model.test_call(3, problems_sar[s], parameters)
+
 
 
 end = time.time()

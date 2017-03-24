@@ -73,41 +73,50 @@ class qlearning_4():
         fit[1] = -np.sum(np.power(self.rt_model-self.mean_rt[:,1], 2.0))
         return fit
 
-    def test_call(self, list_of_problems, parameters):        
+    def test_call(self, nb_repeat, list_of_problems, parameters):        
         self.parameters = parameters
-        self.list_of_problems = list_of_problems
-        self.N = len(self.list_of_problems)        
+        self.list_of_problems = list_of_problems[list_of_problems[:,0] == 1,1]
+        self.N = len(self.list_of_problems)
+        self.performance = np.zeros((nb_repeat, len(self.list_of_problems), 3))
+        self.timing = np.zeros((nb_repeat, len(self.list_of_problems), 8))
+        self.length = np.zeros((nb_repeat, len(self.list_of_problems)))
 
-        self.value = np.zeros(self.N)
-        self.reaction = np.zeros(self.N)
-        self.values_mf =  np.zeros(self.n_action)
-        self.p_a_final = np.zeros(self.n_action)        
-        for i in xrange(self.N):        	
-            # START BLOC
-            self.problem = self.list_of_problems[i]            
+        for k in xrange(nb_repeat):
+            self.values_mf =  np.zeros(self.n_action)
+            self.p_a_final = np.zeros(self.n_action)
+            for i in xrange(self.N):            
+                # START BLOC
+                self.problem = self.list_of_problems[i]            
+                self.values_mf = np.zeros(self.n_action)
+                r = 0
 
-            # SEARCH PHASE
-            r = 0
-            while r == 0:
-            	self.p_a_mf = SoftMaxValues(self.values_mf, float(self.parameters['beta']))
-            	self.current_action = self.sample(self.p_a_mf)
-            	self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
-            	if self.current_action == self.problem:
-            		r = 1
-            	print "search", self.problem, self.current_action, r
-            	self.updateValue(r)
-            # REPEAT PHASE
-            for j in xrange(3):
-            	r = 0
-            	self.p_a_mf = SoftMaxValues(self.values_mf, float(self.parameters['beta']))
-            	self.current_action = self.sample(self.p_a_mf)
-            	self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
-            	if self.current_action == self.problem:
-            		r = 1
-            	print "search", self.problem, self.current_action, r
-            	self.updateValue(r)            	
-            print "\n"
-            
+                # SEARCH PHASE
+                count = 0                
+                while r == 0 and count < 5:
+                    self.p_a_mf = SoftMaxValues(self.values_mf, float(self.parameters['beta']))
+                    self.current_action = self.sample(self.p_a_mf)
+                    self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
+                    r = 1 if self.current_action == self.problem else 0                 
+                    self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+                    self.updateValue(r)
+
+                    count += 1
+                if r == 1:
+                    self.length[k,i] = count-1
+                    # REPEAT PHASE
+                    for j in xrange(3):
+                        r = 0
+                        self.p_a_mf = SoftMaxValues(self.values_mf, float(self.parameters['beta']))
+                        self.current_action = self.sample(self.p_a_mf)
+                        H = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
+                        r = 1 if self.current_action == self.problem else 0                        
+                        self.performance[k,i,j] = r
+                        self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)                      
+                        self.updateValue(r)             
+
+                        count += 1
+                else :
+                    self.length[k,i] = -1   
             
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]

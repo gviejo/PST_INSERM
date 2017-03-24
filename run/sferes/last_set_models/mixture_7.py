@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
 	tmp = np.exp(tmp0*float(beta))
 	return  tmp/float(np.sum(tmp))
 
-class mixture_2():
+class mixture_7():
 	""" mixture strategy
 	"""
 	def __init__(self):
@@ -53,17 +53,7 @@ class mixture_2():
 					# START BLOC
 					self.problem = self.sari[i][1]
 					self.n_element = 0
-					self.w = self.parameters['weight']
-					self.values_mf = np.zeros(4)
-					# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-					# print "biais", self.spatial_biases
-					# self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-					# # shift bias
-					# tmp = self.values_mf[self.current_action]
-					# self.values_mf *= self.parameters['shift']/3.
-					# self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-					# # spatial biaises
-					# self.spatial_biases[self.sari[i,2]-1] += 1.0
+					self.w = self.parameters['weight']					
 
 			# START TRIAL
 			self.current_action = int(self.sari[i][2]-1)
@@ -242,12 +232,10 @@ class mixture_2():
 			for i in xrange(self.N):				
 				# START BLOC
 				self.problem = self.list_of_problems[i]
-				self.n_element = 0
-				self.values_mf = np.zeros(self.n_action)
+				self.n_element = 0				
 				self.w = self.parameters['weight']							
 				r = 0
 				
-
 				# SEARCH PHASE
 				count = 0
 				while r == 0 and count < 5:								
@@ -299,6 +287,7 @@ class mixture_2():
 						count += 1
 				else :
 					self.length[k,i] = -1
+
 									
 	def computeEntropy(self, p):
 		np.seterr(divide='ignore')
@@ -358,26 +347,28 @@ class mixture_2():
 		r = int((reward==1)*1)
 		# Specific to Collins model
 		self.updateWeight(float(r))
-		if self.parameters['noise']:
-			self.p_a = self.p_a*(1-self.parameters['noise'])+self.parameters['noise']*(1.0/self.n_action*np.ones(self.p_a.shape))
-			self.p_r_a = self.p_r_a*(1-self.parameters['noise'])+self.parameters['noise']*(0.5*np.ones(self.p_r_a.shape))
-		#Shifting memory            
-		if self.n_element < int(self.parameters['length']):
-			self.n_element+=1
-		self.p_a[1:self.n_element] = self.p_a[0:self.n_element-1]
-		self.p_r_a[1:self.n_element] = self.p_r_a[0:self.n_element-1]
-		self.p_a[0] = np.ones(self.n_action)*(1/float(self.n_action))
-		self.p_r_a[0] = np.ones((self.n_action, 2))*0.5
-		#Adding last choice                 
-		self.p_a[0] = 0.0
-		self.p_a[0, self.current_action] = 1.0
-		self.p_r_a[0, self.current_action] = 0.0
-		self.p_r_a[0, self.current_action, int(r)] = 1.0        
 		# Updating model free
 		r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                        
 		self.delta = float(r) + self.parameters['shift']*np.max(self.values_mf) - self.values_mf[self.current_action]
 		self.values_mf[self.current_action] = self.values_mf[self.current_action]+self.parameters['alpha']*self.delta                        
 		# forgetting
-		# index = range(self.n_action)
-		# index.pop(int(self.current_action))        
-		# self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        
+		index = range(self.n_action)
+		index.pop(int(self.current_action))        
+		self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        
+		if self.delta < sef.parameters['xi'] or self.delta > self.parameters['yi']:		
+			if self.parameters['noise']:
+				self.p_a = self.p_a*(1-self.parameters['noise'])+self.parameters['noise']*(1.0/self.n_action*np.ones(self.p_a.shape))
+				self.p_r_a = self.p_r_a*(1-self.parameters['noise'])+self.parameters['noise']*(0.5*np.ones(self.p_r_a.shape))
+			#Shifting memory            
+			if self.n_element < int(self.parameters['length']):
+				self.n_element+=1
+			self.p_a[1:self.n_element] = self.p_a[0:self.n_element-1]
+			self.p_r_a[1:self.n_element] = self.p_r_a[0:self.n_element-1]
+			self.p_a[0] = np.ones(self.n_action)*(1/float(self.n_action))
+			self.p_r_a[0] = np.ones((self.n_action, 2))*0.5
+			#Adding last choice                 
+			self.p_a[0] = 0.0
+			self.p_a[0, self.current_action] = 1.0
+			self.p_r_a[0, self.current_action] = 0.0
+			self.p_r_a[0, self.current_action, int(r)] = 1.0        
+

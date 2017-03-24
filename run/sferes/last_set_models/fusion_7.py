@@ -13,7 +13,7 @@ def SoftMaxValues(values, beta):
 	tmp = np.exp(tmp0*float(beta))
 	return  tmp/float(np.sum(tmp))
 
-class fusion_6():
+class fusion_7():
 	""" fusion strategy
 	"""
 	def __init__(self):
@@ -39,129 +39,74 @@ class fusion_6():
 		self.mean_rt = mean_rt
 		self.value = np.zeros(self.N)
 		self.reaction = np.zeros(self.N)        
-		self.mean_entropy_bwm = np.zeros((30,2))
-		self.mean_entropy_ql = np.zeros((30,2))
-		self.entropy_ql = np.zeros(self.N)
-		self.entropy_bwm = np.zeros(self.N)
+		self.values_mf = np.zeros(self.n_action)
+		self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
+		self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
+		self.nb_inferences = 0
+		self.n_element = 0
+		self.Hb = self.max_entropy
+		self.Hf = self.max_entropy    
+		self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
+		self.problem = self.sari[0,1]
+		self.p_a_final = np.zeros(self.n_action)
+		# self.spatial_biases = np.ones(self.n_action) * (1./self.n_action)        
+		for i in xrange(self.N):                    
+			if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
+					# START BLOC
+					self.problem = self.sari[i][1]
+					self.n_element = 0					
 
-		for c in xrange(2):
-			self.values_mf = np.zeros(self.n_action)
-			self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
-			self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
-			self.nb_inferences = 0
-			self.n_element = 0
+
+			# START TRIAL
+			self.current_action = int(self.sari[i][2]-1)
+			r = self.sari[i][0]            
+
+			self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
+			self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
+			# BAYESIAN CALL
+			self.p = self.uniform[:,:]
 			self.Hb = self.max_entropy
-			self.Hf = self.max_entropy    
-			self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))
-			self.problem = self.sari[0,1]
-			self.p_a_final = np.zeros(self.n_action)
-			index0 = 0
-			index1 = 0
-			for i in xrange(self.N):                    
-				if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:                    
-						# START BLOC
-						self.problem = self.sari[i][1]
-						self.n_element = 0
-						index0 = 0
-						index1 = 0
+			self.nb_inferences = 0
+			self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+			self.p_decision = np.zeros(int(self.parameters['length'])+1)
+			self.p_retrieval= np.zeros(int(self.parameters['length'])+1)
+			self.p_sigmoide = np.zeros(int(self.parameters['length'])+1)
+			self.p_ak = np.zeros(int(self.parameters['length'])+1)        
+			q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
+			reaction = np.zeros(int(self.parameters['length'])+1)
+			# START            
+			self.sigmoideModule()
+			self.p_sigmoide[0] = self.pA
+			self.p_decision[0] = self.pA
+			self.p_retrieval[0] = 1.0-self.pA
+			# print "mf = ", self.values_mf
 
-
-				# START TRIAL
-				self.current_action = int(self.sari[i][2]-1)
-				r = self.sari[i][0]            
-
-				self.p_a_mf = SoftMaxValues(self.values_mf, self.parameters['gamma'])    
-				self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
-				# BAYESIAN CALL
-				self.p = self.uniform[:,:]
-				self.Hb = self.max_entropy
-				self.nb_inferences = 0
-				self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
-				self.p_decision = np.zeros(int(self.parameters['length'])+1)
-				self.p_retrieval= np.zeros(int(self.parameters['length'])+1)
-				self.p_sigmoide = np.zeros(int(self.parameters['length'])+1)
-				self.p_ak = np.zeros(int(self.parameters['length'])+1)        
-				q_values = np.zeros((int(self.parameters['length'])+1, self.n_action))
-				reaction = np.zeros(int(self.parameters['length'])+1)
-				self.Hb_all = np.zeros(int(self.parameters['length'])+1)
-				self.Hb_all[0] = self.Hb
-				# START            
-				self.Hmetab = 0
-				self.Hmetaf = 0
-				if c == 1:
-					if self.sari[i,4] == 0:
-						self.Hmetab = self.mean_entropy_bwm[index0,0]						
-						self.Hmetaf = self.mean_entropy_ql[index0,0]
-						index0 += 1
-					elif self.sari[i,4] == 1:
-						self.Hmetab = self.mean_entropy_bwm[index1,1]
-						self.Hmetaf = self.mean_entropy_ql[index1,1]
-						index1 += 1
-				
+			self.fusionModule()
+			self.p_ak[0] = self.p_a_final[self.current_action]            
+			H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
+			reaction[0] = float(H)        
+			for j in xrange(self.n_element):            
+				self.inferenceModule()
+				self.evaluationModule()				
+				self.fusionModule()                
+				self.p_ak[j+1] = self.p_a_final[self.current_action]                
+				H = self.computeEntropy(self.p_a_final)
+				N = self.nb_inferences+1.0
+				reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
+				# reaction[j+1] = H
 				self.sigmoideModule()
-				self.p_sigmoide[0] = self.pA
-				self.p_decision[0] = self.pA
-				self.p_retrieval[0] = 1.0-self.pA
-
-				self.fusionModule()
-				self.p_ak[0] = self.p_a_final[self.current_action]            
-				H = -(self.p_a_final*np.log2(self.p_a_final)).sum()
-				reaction[0] = float(H)        
-
-				for j in xrange(self.n_element):            
-					self.inferenceModule()
-					self.evaluationModule()				
-					self.fusionModule()                
-					self.p_ak[j+1] = self.p_a_final[self.current_action]                
-					H = self.computeEntropy(self.p_a_final)
-					N = self.nb_inferences+1.0
-					reaction[j+1] = float(((np.log2(N))**self.parameters['sigma'])+H)
-					# reaction[j+1] = H
-					self.sigmoideModule()
-					self.p_sigmoide[j+1] = self.pA            
-					self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
-					self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
-					self.Hb_all[j+1] = self.Hb					
-				
-				if c == 0:
-					self.entropy_ql[i] = self.Hf
-					self.entropy_bwm[i] = np.dot(self.p_decision, self.Hb_all)
-				elif c == 1:
-					self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
-					self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
-				
-				self.updateValue(r)
-
-			# COMPUTE META ENTROPY
-			if c == 0:
-				bwm_count = np.zeros((30,2))
-				ql_count = np.zeros((30,2))
-				index0 = 0				
-				index1 = 0
-				for i in xrange(self.N):
-					if self.sari[i][4]-self.sari[i-1][4] < 0.0 and i > 0:
-						index0 = 0
-						index1 = 0
-					if self.sari[i][4] == 0:
-						self.mean_entropy_bwm[index0,0] += self.entropy_bwm[i]
-						self.mean_entropy_ql[index0,0] += self.entropy_ql[i]
-						bwm_count[index0,0] += 1.0
-						ql_count[index0,0] += 1.0
-						index0 += 1	
-
-					elif self.sari[i][4] == 1:						
-						self.mean_entropy_bwm[index1,1] += self.entropy_bwm[i]
-						self.mean_entropy_ql[index1,1] += self.entropy_ql[i]
-						bwm_count[index1,1] += 1.0
-						ql_count[index1,1] += 1.0
-						index1 += 1
-					
-				for j in xrange(30):
-					for k in xrange(2):
-						self.mean_entropy_bwm[j,k] = self.mean_entropy_bwm[j,k] / bwm_count[j,k]
-						self.mean_entropy_ql[j,k] = self.mean_entropy_ql[j,k] / ql_count[j,k]
+				self.p_sigmoide[j+1] = self.pA            
+				self.p_decision[j+1] = self.pA*self.p_retrieval[j]            
+				self.p_retrieval[j+1] = (1.0-self.pA)*self.p_retrieval[j]                    
+				# print j+1, " p_ak=", self.p_ak[j+1], " p_decision=", self.p_decision[j+1], " p_retrieval=", self.p_retrieval[0]
 			
-
+			# print np.dot(self.p_decision,self.p_ak)
+			self.value[i] = float(np.log(np.dot(self.p_decision,self.p_ak)))        
+			# print self.value[i]
+			# print self.p_decision
+			self.reaction[i] = float(np.sum(reaction*np.round(self.p_decision.flatten(),3)))
+			# print self.reaction[i]
+			self.updateValue(r)
 
 		# ALIGN TO MEDIAN
 		self.rt_align = np.array([np.median(self.reaction), np.percentile(self.reaction, 75)-np.percentile(self.reaction, 25)])
@@ -356,9 +301,7 @@ class fusion_6():
 					self.Hb = self.max_entropy
 					self.nb_inferences = 0
 					self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        					
-					self.Hmetab = self.mean_entropy_bwm[count,0]
-					self.Hmetaf = self.mean_entropy_ql[count,0]
-
+	
 					while self.sigmoideModule():
 						self.inferenceModule()
 						self.evaluationModule()                
@@ -385,9 +328,6 @@ class fusion_6():
 						self.Hb = self.max_entropy
 						self.nb_inferences = 0
 						self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        	            
-						self.Hmetab = self.mean_entropy_bwm[j,1]
-						self.Hmetaf = self.mean_entropy_ql[j,1]						
-						
 						while self.sigmoideModule():  
 							self.inferenceModule()
 							self.evaluationModule()	                
@@ -430,7 +370,7 @@ class fusion_6():
 
 	def sigmoideModule(self):
 		np.seterr(invalid='ignore')
-		x = 2*self.max_entropy - self.Hb - self.Hf + self.Hmetab - self.Hmetaf
+		x = 2*self.max_entropy-self.Hb-self.Hf
 		self.pA = 1/(1+((self.n_element-self.nb_inferences)**self.parameters['threshold'])*np.exp(-x*self.parameters['gain']))
 		# print "n=",self.n_element," i=", self.nb_inferences, " Hb=", self.Hb, " Hf=", self.Hf, " x=", x, " p(A)=",self.pA, "threshold= ", self.parameters['threshold'], "gain = ", self.parameters['gain']
 		return np.random.uniform(0,1) > self.pA
@@ -446,21 +386,6 @@ class fusion_6():
 		
 	def updateValue(self, reward):		
 		r = int((reward==1)*1)        
-		if self.parameters['noise']:
-			self.p_a = self.p_a*(1-self.parameters['noise'])+self.parameters['noise']*(1.0/self.n_action*np.ones(self.p_a.shape))
-			self.p_r_a = self.p_r_a*(1-self.parameters['noise'])+self.parameters['noise']*(0.5*np.ones(self.p_r_a.shape))
-		#Shifting memory            
-		if self.n_element < int(self.parameters['length']):
-			self.n_element+=1
-		self.p_a[1:self.n_element] = self.p_a[0:self.n_element-1]
-		self.p_r_a[1:self.n_element] = self.p_r_a[0:self.n_element-1]
-		self.p_a[0] = np.ones(self.n_action)*(1/float(self.n_action))
-		self.p_r_a[0] = np.ones((self.n_action, 2))*0.5
-		#Adding last choice                 
-		self.p_a[0] = 0.0
-		self.p_a[0, self.current_action] = 1.0
-		self.p_r_a[0, self.current_action] = 0.0
-		self.p_r_a[0, self.current_action, int(r)] = 1.0        
 		# Updating model free
 		r = (reward==0)*-1.0+(reward==1)*1.0+(reward==-1)*-1.0                               
 		self.delta = float(r) + self.parameters['shift']*np.max(self.values_mf) - self.values_mf[self.current_action]
@@ -469,3 +394,21 @@ class fusion_6():
 		index = range(self.n_action)
 		index.pop(int(self.current_action))        
 		self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])    
+
+		if self.delta < sef.parameters['xi'] or self.delta > self.parameters['yi']:		
+			if self.parameters['noise']:
+				self.p_a = self.p_a*(1-self.parameters['noise'])+self.parameters['noise']*(1.0/self.n_action*np.ones(self.p_a.shape))
+				self.p_r_a = self.p_r_a*(1-self.parameters['noise'])+self.parameters['noise']*(0.5*np.ones(self.p_r_a.shape))
+			#Shifting memory            
+			if self.n_element < int(self.parameters['length']):
+				self.n_element+=1
+			self.p_a[1:self.n_element] = self.p_a[0:self.n_element-1]
+			self.p_r_a[1:self.n_element] = self.p_r_a[0:self.n_element-1]
+			self.p_a[0] = np.ones(self.n_action)*(1/float(self.n_action))
+			self.p_r_a[0] = np.ones((self.n_action, 2))*0.5
+			#Adding last choice                 
+			self.p_a[0] = 0.0
+			self.p_a[0, self.current_action] = 1.0
+			self.p_r_a[0, self.current_action] = 0.0
+			self.p_r_a[0, self.current_action, int(r)] = 1.0        
+

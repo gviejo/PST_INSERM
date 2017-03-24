@@ -125,7 +125,7 @@ double sum_prod(double *a, double *b, int n) {
 	return tmp;
 }
 // void sferes_call(double * fit, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_)
-void sferes_call(double * fit, const int N, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_, double sigma_, double kappa_, double shift_, double xi_)
+void sferes_call(double * fit, const int N, const char* data_dir, double alpha_, double beta_, double noise_, double length_, double gain_, double threshold_, double gamma_, double sigma_, double kappa_, double shift_, double xi_, double yi_)
 {
 
 	///////////////////
@@ -236,7 +236,8 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		int n_element = 0;
 		int s, a, r;		
 		double Hf = 0.0;
-		int index2 = 0;		
+		int index0 = 0;
+		int index1 = 0;
 		for (int m=0;m<n_action;m++) {
 			values_mf[m] = 0.0;		
 		}		
@@ -246,7 +247,8 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 					// START BLOC //
 					problem = sari[i][1];
 					n_element = 0;						
-					index2 = 0;
+					index0 = 0;
+					index1 = 0;
 				}
 			// }
 			// START TRIAL //
@@ -278,10 +280,17 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 			double Hmetab = 0;
 			double Hmetaf = 0;
 			if (c == 1) {
-				double Hmetab = mean_entropy_bwm[index2][sari[i][4]];
-				double Hmetaf = mean_entropy_ql [index2][sari[i][4]];			
-			}
-			index2 += 1;
+				if (sari[i][4] == 0) {
+					Hmetab = mean_entropy_bwm[index0][0];
+					Hmetaf = mean_entropy_ql [index0][0];			
+					index0 += 1;
+				}
+				else if (sari[i][4] == 1) {
+					Hmetab = mean_entropy_bwm[index1][1];
+					Hmetaf = mean_entropy_ql [index1][1];			
+					index1 += 1;
+				}				
+			}			
 			p_decision[0] = sigmoide(Hb, Hf, Hmetab, Hmetaf, n_element, nb_inferences, threshold, gain);		
 			p_retrieval[0] = 1.0 - p_decision[0];		
 			fusion(p_a_final, values_mb, values_mf, beta);		
@@ -404,26 +413,27 @@ void sferes_call(double * fit, const int N, const char* data_dir, double alpha_,
 		if (c == 0) {
 			double bwm_count [30] [2];
 			double ql_count [30] [2];
-			int index = 0;
+			int index0 = 0;
+			int index1 = 0;
 			// COMPUTE MEAN ENTROPY
 			for (int i=0;i<nb_trials;i++) {	
-				// std::cout << entropy_bwm[i] << " " << entropy_ql[i] << std::endl;										
 				if ((sari[i][4]-sari[i-1][4] != 0.0) && (i > 0)) {					
-					index = 0;				
+					index0 = 0;
+					index1 = 0;
 				}
 				if (sari[i][4] == 0) {
-					mean_entropy_bwm[index][0] += entropy_bwm[i];
-					mean_entropy_ql[index][0] += entropy_ql[i];					
-					bwm_count[index][0] += 1.0;
-					ql_count[index][0] += 1.0;
-					// std::cout << "yo " << index << " " << mean_entropy_bwm[index][0] << " " << bwm_count[index][0] << std::endl;
-				} else {
-					mean_entropy_bwm[index][1] += entropy_bwm[i];
-					mean_entropy_ql[index][1] += entropy_ql[i];					
-					bwm_count[index][1] += 1.0;
-					ql_count[index][1] += 1.0;					
-				}
-				index += 1;				
+					mean_entropy_bwm[index0][0] += entropy_bwm[i];
+					mean_entropy_ql [index0][0] += entropy_ql[i];					
+					bwm_count[index0][0] += 1.0;
+					ql_count [index0][0] += 1.0;
+					index0 += 1;
+				} else if (sari[i][4] == 1) {
+					mean_entropy_bwm[index1][1] += entropy_bwm[i];
+					mean_entropy_ql [index1][1] += entropy_ql [i];					
+					bwm_count[index1][1] += 1.0;
+					ql_count [index1][1] += 1.0;					
+					index1 += 1;
+				}				
 			}
 			for (int j = 0; j< 30; j++) {				
 					mean_entropy_bwm[j][0] = mean_entropy_bwm[j][0]/bwm_count[j][0];

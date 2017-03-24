@@ -54,15 +54,6 @@ class mixture_3():
 					self.problem = self.sari[i][1]
 					self.n_element = 0
 					self.w = self.parameters['weight']					
-					# RESET Q-LEARNING SPATIAL BIASES AND REWARD SHIFT
-					# print "biais", self.spatial_biases
-					# self.values_mf = self.spatial_biases/self.spatial_biases.sum()
-					# # shift bias
-					# tmp = self.values_mf[self.current_action]
-					# self.values_mf *= self.parameters['shift']/3.
-					# self.values_mf[self.current_action] = tmp*(1.0-self.parameters['shift'])
-					# # spatial biaises
-					# self.spatial_biases[self.sari[i,2]-1] += 1.0
 
 			# START TRIAL
 			self.current_action = int(self.sari[i][2]-1)
@@ -222,7 +213,7 @@ class mixture_3():
 		self.list_of_problems = list_of_problems[list_of_problems[:,0] == 1,1]
 		self.N = len(self.list_of_problems)
 		self.performance = np.zeros((nb_repeat, len(self.list_of_problems), 3))
-		self.timing = {i:[] for i in xrange(1, 20)}
+		self.timing = np.zeros((nb_repeat, len(self.list_of_problems), 8))
 		self.length = np.zeros((nb_repeat, len(self.list_of_problems)))
 
 		for k in xrange(nb_repeat):
@@ -241,14 +232,13 @@ class mixture_3():
 			for i in xrange(self.N):				
 				# START BLOC
 				self.problem = self.list_of_problems[i]
-				self.n_element = 0
-				self.values_mf = np.zeros(self.n_action)
+				self.n_element = 0				
 				self.w = self.parameters['weight']							
 				r = 0
-				tmp = [] # for saving rt timing in the search phase
-
+				
 				# SEARCH PHASE
-				while r == 0:								
+				count = 0
+				while r == 0 and count < 5:								
 					# SEARCH PHASE			
 					self.Hb = self.max_entropy        
 					self.p_a_final = np.zeros(self.n_action)					
@@ -264,38 +254,40 @@ class mixture_3():
 
 					self.fusionModule()
 					H = self.computeEntropy(self.p_a_final)
-					# self.value[i] = float(np.log(self.p_a_final[self.current_action]))             					
-					# self.reaction[i] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)            
 					self.current_action = int(self.sample(self.p_a_final))
 					r = 1 if self.current_action == self.problem else 0
-					tmp.append(float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H))
+					self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+					
 					self.updateValue(r)							
+					count += 1
 				
-				# REPEAT PHASE					
-				for j in xrange(3):
-					r = 0
-					#BAYESIAN CALL
-					self.p = self.uniform[:,:]
-					self.Hb = self.max_entropy
-					self.nb_inferences = 0  
-					self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+				if r == 1:
+					self.length[k,i] = count-1
+					# REPEAT PHASE
+					for j in xrange(3):
+						r = 0
+						#BAYESIAN CALL
+						self.p = self.uniform[:,:]
+						self.Hb = self.max_entropy
+						self.nb_inferences = 0  
+						self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
 
-					while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
-						self.inferenceModule()
-						self.evaluationModule()                    
+						while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
+							self.inferenceModule()
+							self.evaluationModule()                    
 
-					self.fusionModule()
-					self.current_action = int(self.sample(self.p_a_final))
-					r = 1 if self.current_action == self.problem else 0						
-					H = self.computeEntropy(self.p_a_final)
-					self.updateValue(r)	        				
-					self.performance[k,i,j] = r
-					tmp.append(float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H))					
-				
-				self.timing[len(tmp)-3].append(tmp)
-				self.length[k,i] = len(tmp)-3
-		for k in self.timing.iterkeys():
-			self.timing[k] = np.array(self.timing[k])
+						self.fusionModule()
+						self.current_action = int(self.sample(self.p_a_final))
+						r = 1 if self.current_action == self.problem else 0						
+						H = self.computeEntropy(self.p_a_final)
+						self.updateValue(r)	        				
+						self.performance[k,i,j] = r
+						self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
+						
+						count += 1
+				else :
+					self.length[k,i] = -1
+
 									
 	def computeEntropy(self, p):
 		np.seterr(divide='ignore')

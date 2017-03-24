@@ -31,9 +31,9 @@ from  qlearning_4 import qlearning_4
 from 	 fusion_5 import    fusion_5
 from 	mixture_5 import   mixture_5
 from   bayesian_5 import  bayesian_5
-# from 	 fusion_6 import    fusion_6
-# from 	mixture_7 import   mixture_7
-# from 	 fusion_7 import    fusion_7
+from 	 fusion_6 import    fusion_6
+from 	mixture_7 import   mixture_7
+from 	 fusion_7 import    fusion_7
 
 sys.path.append("../../src")
 from Models import *
@@ -64,9 +64,9 @@ def worker_test(w, pos_, s, p_to_test_):
 		p = p_to_test_[t][p_to_test_[t].keys()[0]]		
 		
 		model = copy.deepcopy(vmodels[m][int(v)])
+		fit = model.sferes_call(data_1, data_2, p)
 		model.test_call(3, problems_sar[s], p)
 
-		fit = model.sferes_call(data_1, data_2, p)
 		model.timing = model.timing - model.rt_align[0]
 		model.timing = model.timing / model.rt_align[1]
 		performance = {}
@@ -94,19 +94,93 @@ models = dict({"fusion":FSelection(),
 					"mixture":CSelection(),
 					"metaf":MetaFSelection(),
 					"sweeping":Sweeping()})
-vmodels = dict({'fusion':{1:fusion_1()},
-				'mixture':{1:mixture_1()},
-				'bayesian':{1:bayesian_1()},
-				'qlearning':{1:qlearning_1()}
+vmodels = dict({'fusion'	:	{	1	:	fusion_1()		,
+									2	:	fusion_2()		,
+									3	:	fusion_3()		,
+									4	:	fusion_4()		,
+									5	:	fusion_5()		,
+									6	:	fusion_6()		,
+									7	:	fusion_7()		
+								},
+				'mixture'	:	{	1	:	mixture_1()		,
+									2	: 	mixture_2()		,
+									3	: 	mixture_3()		,
+									4	: 	mixture_4()		,
+									5	: 	mixture_5()		,
+									7	: 	mixture_7()		
+								},
+				'bayesian'	:	{	1	:	bayesian_1()	,
+									5	:	bayesian_5()
+								},
+				'qlearning'	:	{	1	:	qlearning_1()	,
+									2	:	qlearning_2()	,
+									3	:	qlearning_3()	,
+									4	:	qlearning_4()	,
+								}
 			})
-
-p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift'], 
+nparameters = {'fusion'	:	{		1	:	8.0		,
+									2	:	9.0		,
+									3	:	9.0		,
+									4	:	10.0	,
+									5	:	10.0	,
+									6	:	10.0	,
+									7	:	12.0		
+								},
+				'mixture'	:	{	1	:	7.0		,
+									2	: 	8.0		,
+									3	: 	8.0		,
+									4	: 	9.0		,
+									5	: 	9.0		,
+									7	: 	11.0		
+								},
+				'bayesian'	:	{	1	:	4.0		,
+									5	:	4.0
+								},
+				'qlearning'	:	{	1	:	3.0		,
+									2	:	4.0		,
+									3	:	4.0		,
+									4	:	5.0		,
+								}
+			}
+p_order = dict({'fusion':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift', 'xi', 'yi'], 
 					'qlearning':['alpha','beta', 'sigma', 'kappa', 'shift'],
 					'bayesian':['length','noise','threshold', 'sigma'],
-					'selection':['beta','eta','length','threshold','noise','sigma', 'sigma_rt'],
-					'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift'],
-					'metaf':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift', 'eta'],
-					'sweeping':['alpha','beta', 'noise','length', 'gain', 'threshold', 'gamma', 'sigma', 'kappa', 'shift']}) 
+					'mixture':['alpha', 'beta', 'noise', 'length', 'weight', 'threshold', 'sigma', 'kappa', 'shift', 'xi', 'yi']})
+bounds = dict({'fusion':	{"beta":[0.0, 100.0], # temperature for final decision                            
+							'alpha':[0.0, 1.0],
+							"length":[1, 10],
+							"threshold":[0.0, 20.0], # sigmoide parameter
+							"noise":[0.0, 0.1],
+							"gain":[0.00001, 10000.0], # sigmoide parameter 
+							"sigma":[0.0, 20.0],
+							"gamma":[0.0, 100.0], # temperature for entropy from qlearning soft-max
+							"kappa":[0.0, 1.0],
+							"shift":[0.0, 0.999999],
+							"xi":[-20, 0.0],
+							"yi":[0.0, 20.0]},
+				'mixture':	{"length":[1, 10], 
+							"threshold":[0.01, -np.log2(1./4.)], 
+							"noise":[0.0, 0.1],                                                
+							'alpha':[0.0, 1.0],
+							"beta":[0.0, 100.0], # QLEARNING
+							"sigma":[0.0, 20.0], 
+							"weight":[0.0, 1.0], 
+							"kappa":[0.0, 1.0],
+							"shift":[0.0, 0.999999],
+							"xi":[-20, 0.0],
+							"yi":[0.0, 20.0]},
+				'bayesian':	{"length":[1, 10], 
+                    		"threshold":[0.01, -np.log2(1./4.)], 
+                    		"noise":[0.0, 0.1],                                                
+                    		"sigma":[0.0, 20.0]},
+                'qlearning' : {'alpha':[0.0, 1.0],
+                    		"beta":[0.0, 100.0], # QLEARNING
+                    		"sigma":[0.0, 20.0], 
+                    		"kappa":[0.0, 1.0],
+                    		"shift":[0.0, 1.0]}
+				})
+
+
 
 
 front = pareto("SFERES_9") # dummy for rt
@@ -215,7 +289,7 @@ for s in monkeys: # singe
 	pareto2[s] = dict() # second pareto set with the set dimension
 	pareto3[s] = dict() # third pareto set with mixed models
 	# for p in set_to_models.iterkeys(): # ensemble testé
-	for p in [1,2,3,4,5]: # ensemble testé
+	for p in [1,2,3,4,5,6,7]: # ensemble testé
 		data[s][p] = dict()
 		pareto[s][p] = dict()		
 		for m in set_to_models[p]: # modele dans ensemble testé
@@ -224,7 +298,9 @@ for s in monkeys: # singe
 			for r in xrange(n_run):						
 				data[s][p][id_to_models[m]][r] = np.genfromtxt("last_set/set_"+str(p)+"_"+str(m)+"/sferes_"+id_to_models[m]+"_pst_inserm_"+s+"_"+str(r)+"_"+str(p)+".dat")
 				order = p_order[id_to_models[m]]
-				scale = models[id_to_models[m]].bounds
+				if p < 6:
+					order = order[0:-2]
+				scale = bounds[m]
 				for i in order:
 					data[s][p][id_to_models[m]][r][:,order.index(i)+4] = scale[i][0]+data[s][p][id_to_models[m]][r][:,order.index(i)+4]*(scale[i][1]-scale[i][0])
 
@@ -243,7 +319,7 @@ for s in monkeys: # singe
 			pareto[s][p][id_to_models[m]][:,3] = pareto[s][p][id_to_models[m]][:,3] - 50000.0
 			pareto[s][p][id_to_models[m]][:,4] = pareto[s][p][id_to_models[m]][:,4] - 50000.0            
 			# bic
-			pareto[s][p][id_to_models[m]][:,3] = 2*pareto[s][p][id_to_models[m]][:,3] - float(len(p_order[id_to_models[m]]))*np.log(front.N[s])
+			pareto[s][p][id_to_models[m]][:,3] = 2*pareto[s][p][id_to_models[m]][:,3] - nparameters[m][p]*np.log(front.N[s])
 
 			best_bic = 2*best_log[s] - float(len(p_order[id_to_models[m]]))*np.log(front.N[s])
 			worst_bic = 2*worst_log[s] - float(len(p_order[id_to_models[m]]))*np.log(front.N[s])                    
@@ -437,7 +513,7 @@ for s in monkeys: # singe
 # ------------------------------------
 	# pareto4 = model | run | gen | ind |	
 	pool = multiprocessing.Pool(processes = nworker)
-	cut = np.sort(value)[int(len(value)/6.)]
+	cut = np.sort(value)[int(len(value)/2.)]
 	points = np.where(value<cut)[0]
 	pos = np.array_split(points, nworker)
 	# find parameter for all point first; index dict by points array

@@ -181,59 +181,89 @@ class bayesian_5():
             self.rt_model[i] = np.mean(self.reaction[self.sari[:,3] == i])
 
 
-    def test_call(self, list_of_problems, parameters):        
-        self.parameters = parameters        
-        self.list_of_problems = list_of_problems
+    def test_call(self, nb_repeat, list_of_problems, parameters):        
+        self.parameters = parameters
+        self.list_of_problems = list_of_problems[list_of_problems[:,0] == 1,1]
         self.N = len(self.list_of_problems)
-        
-        self.value = np.zeros(self.N)
-        self.reaction = np.zeros(self.N)
-        self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
-        self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
-        self.nb_inferences = 0
-        self.n_element = 0
-        self.Hb = self.max_entropy        
-        self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))        
-        self.p_a_final = np.zeros(self.n_action)
-        for i in xrange(self.N):            
-            # START BLOC
-            self.problem = self.list_of_problems[i]
+        self.performance = np.zeros((nb_repeat, len(self.list_of_problems), 3))
+        self.timing = np.zeros((nb_repeat, len(self.list_of_problems), 8))
+        self.length = np.zeros((nb_repeat, len(self.list_of_problems)))
+
+        for k in xrange(nb_repeat):
+            self.value = np.zeros(self.N)
+            self.reaction = np.zeros(self.N)
+            self.values_mf =  np.zeros(self.n_action)
+            self.p_a = np.zeros((int(self.parameters['length']), self.n_action))
+            self.p_r_a = np.zeros((int(self.parameters['length']), self.n_action, 2))
+            self.nb_inferences = 0
             self.n_element = 0
+            self.Hb = self.max_entropy        
+            self.uniform = np.ones((self.n_action, 2))*(1./(self.n_action*2))        
+            self.p_a_final = np.zeros(self.n_action)
 
-            # SEARCH PHASE
-            r = 0
-            while r == 0:
-                # BAYESIAN CALL
-                self.p = self.uniform[:,:]
-                self.Hb = self.max_entropy
-                self.nb_inferences = 0  
-                self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                
-                while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
-                    self.inferenceModule()
-                    self.evaluationModule()                    
-                self.current_action = self.sample(self.p_a_mb)
-                if self.current_action == self.problem:
-                    r = 1
-                print "search", self.problem, self.current_action, r
-                self.updateValue(r)
-            # REPEAT PHASE
-            for j in xrange(3):
+            for i in xrange(self.N):            
+                # START BLOC
+                self.problem = self.list_of_problems[i]
+                self.n_element = 0
                 r = 0
-                # BAYESIAN CALL
-                self.p = self.uniform[:,:]
-                self.Hb = self.max_entropy
-                self.nb_inferences = 0  
-                self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
-                while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
-                    self.inferenceModule()
-                    self.evaluationModule()                    
-                self.current_action = self.sample(self.p_a_mb)
-                if self.current_action == self.problem:
-                    r = 1                
-                print "repeat", self.problem, self.current_action, r
-                self.updateValue(r)
-            print "\n"
 
+                # SEARCH PHASE
+                count = 0
+                while r == 0 and count < 5:
+                    # BAYESIAN CALL
+                    self.nb_inferences = 0  
+
+                    # NO SWEEPONG
+                    if count == 0:
+                        self.p = self.uniform[:,:]
+                        self.Hb = self.max_entropy                    
+                        self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                
+
+                    while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
+                        self.inferenceModule()
+                        self.evaluationModule()                    
+                    
+                    self.current_action = int(self.sample(self.p_a_mb))
+                    r = 1 if self.current_action == self.problem else 0                    
+                    self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+self.Hb)
+                    
+                    self.updateValue(r)
+                    # SWEEPING
+                    if count and r==0:
+                        self.p = self.uniform[:,:]                
+                        self.Hb = self.max_entropy
+                        self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)                        
+                        self.nb_inferences = 0
+                        for j in xrange(self.n_element):
+                            self.inferenceModule()
+                        self.evaluationModule()                     
+
+                    count += 1
+                    
+                if r == 1:
+                    self.length[k,i] = count - 1
+                    # REPEAT PHASE
+                    for j in xrange(3):
+                        r = 0
+                        # BAYESIAN CALL
+                        self.p = self.uniform[:,:]
+                        self.Hb = self.max_entropy
+                        self.nb_inferences = 0  
+                        self.p_a_mb = np.ones(self.n_action)*(1./self.n_action)        
+                        
+                        while self.Hb > self.parameters['threshold'] and self.nb_inferences < self.n_element:            
+                            self.inferenceModule()
+                            self.evaluationModule()                    
+                        
+                        self.current_action = self.sample(self.p_a_mb)
+                        r = 1 if self.current_action == self.problem else 0                                             
+                        self.updateValue(r)
+                        self.performance[k,i,j] = r
+                        self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+self.Hb)                        
+
+                        count += 1
+                else:
+                    self.length[k,i] = -1
     def sample(self, values):
         tmp = [np.sum(values[0:i]) for i in range(len(values))]
         return np.sum(np.array(tmp) < np.random.rand())-1
