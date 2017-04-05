@@ -101,9 +101,9 @@ class qlearning_1():
                 	self.Hf = -(self.p_a_mf*np.log2(self.p_a_mf)).sum()
                 	r = 1 if self.current_action == self.problem else 0                	
                 	self.timing[k,i,count] = float((np.log2(float(self.nb_inferences+1))**self.parameters['sigma'])+H)
-                    self.updateValue(r)
+                        self.updateValue(r)
+                        count += 1
 
-                    count += 1
                 if r == 1:
                     self.length[k,i] = count-1
                     # REPEAT PHASE

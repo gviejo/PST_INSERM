@@ -49,7 +49,7 @@ import copy
 # ------------------------------------
 # FUNCTION FOR MULTIPROCESSING
 # ------------------------------------
-nworker = 6
+nworker = 8
 def worker_test_star(a_b):
 	return worker_test(*a_b)
 
@@ -65,7 +65,7 @@ def worker_test(w, pos_, s, p_to_test_):
 		
 		model = copy.deepcopy(vmodels[m][int(v)])
 		fit = model.sferes_call(data_1, data_2, p)
-		model.test_call(3, problems_sar[s], p)
+		model.test_call(100, problems_sar[s], p)
 
 		model.timing = model.timing - model.rt_align[0]
 		model.timing = model.timing / model.rt_align[1]
@@ -300,7 +300,7 @@ for s in monkeys: # singe
 				order = p_order[id_to_models[m]]
 				if p < 6:
 					order = order[0:-2]
-				scale = bounds[m]
+				scale = bounds[id_to_models[m]]
 				for i in order:
 					data[s][p][id_to_models[m]][r][:,order.index(i)+4] = scale[i][0]+data[s][p][id_to_models[m]][r][:,order.index(i)+4]*(scale[i][1]-scale[i][0])
 
@@ -319,7 +319,7 @@ for s in monkeys: # singe
 			pareto[s][p][id_to_models[m]][:,3] = pareto[s][p][id_to_models[m]][:,3] - 50000.0
 			pareto[s][p][id_to_models[m]][:,4] = pareto[s][p][id_to_models[m]][:,4] - 50000.0            
 			# bic
-			pareto[s][p][id_to_models[m]][:,3] = 2*pareto[s][p][id_to_models[m]][:,3] - nparameters[m][p]*np.log(front.N[s])
+			pareto[s][p][id_to_models[m]][:,3] = 2*pareto[s][p][id_to_models[m]][:,3] - nparameters[id_to_models[m]][p]*np.log(front.N[s])
 
 			best_bic = 2*best_log[s] - float(len(p_order[id_to_models[m]]))*np.log(front.N[s])
 			worst_bic = 2*worst_log[s] - float(len(p_order[id_to_models[m]]))*np.log(front.N[s])                    
@@ -492,7 +492,7 @@ for s in monkeys: # singe
 # ------------------------------------
 	tmp = pareto4[s][:,4:]
 	positif = (tmp[:,0]>0)*(tmp[:,1]>0)
-	tpm = tmp[positif]
+	tmp = tmp[positif]
 	ideal = np.max(tmp[:,0:2], 0)
 	nadir = np.min(tmp[:,0:2], 0)
 	value = 0.5*((ideal-tmp)/(ideal-nadir))
@@ -535,7 +535,7 @@ for s in monkeys: # singe
 	value2 = np.vstack((value2[:,0], np.sum(value2[:,1:], 1))).transpose()
 	ind_best_point = int(value2[np.argmin(value2[:,1]), 0])
 	# pareto 4 has points with negative value
-	tmp = pareto4[s][:,5:]
+	tmp = pareto4[s][:,4:]
 	x = np.arange(len(tmp))
 	index = (tmp[:,0]>0)*(tmp[:,1]>0)
 	ind_best_point = x[index][ind_best_point]
@@ -566,7 +566,7 @@ with open("../papier/p_test_v1.pickle",'wb') as f:
 with open("../papier/to_compare_value.pickle", 'wb') as f:
 	pickle.dump(to_compare_value, f)
 with open("../papier/p_test_all_v.pickle", 'wb') as f:
-	pickle.dump(p_test)
+	pickle.dump(p_test, f)
 
 
 with open("../papier/pareto2.pickle", 'wb') as f:
