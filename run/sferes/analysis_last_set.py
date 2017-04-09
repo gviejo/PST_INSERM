@@ -49,7 +49,7 @@ import copy
 # ------------------------------------
 # FUNCTION FOR MULTIPROCESSING
 # ------------------------------------
-nworker = 8
+nworker = 28
 def worker_test_star(a_b):
 	return worker_test(*a_b)
 
@@ -65,7 +65,7 @@ def worker_test(w, pos_, s, p_to_test_):
 		
 		model = copy.deepcopy(vmodels[m][int(v)])
 		fit = model.sferes_call(data_1, data_2, p)
-		model.test_call(100, problems_sar[s], p)
+		model.test_call(2, problems_sar[s], p)
 
 		model.timing = model.timing - model.rt_align[0]
 		model.timing = model.timing / model.rt_align[1]
@@ -338,7 +338,7 @@ for s in monkeys: # singe
 	for m in id_to_models.iterkeys():
 		tmp = {}	
 		# for p in set_to_models.iterkeys():
-		for p in [1,2,3,4,5]:
+		for p in [1,2,3,4,5,6,7]:
 			if m in set_to_models[p]:
 				tmp[p] = pareto[s][p][id_to_models[m]]
 		tmp=np.vstack([np.hstack((np.ones((len(tmp[p]),1))*p,tmp[p])) for p in tmp.iterkeys()])			
@@ -394,7 +394,7 @@ for s in monkeys: # singe
 
 	data_run = data[s][set_][m][run_]
 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
-	p_test[s+str(set_)] = {'best_tche':dict({m:dict(zip(p_order[m],tmp[4:]))})}
+	p_test[s] = {'best_tche':{m+str(set_):dict(zip(p_order[m],tmp[4:]))}}
 	to_compare_value[s] = {'tche':value}
 	position[s+str(set_)+'_tche'] = best_ind[5:]
 
@@ -405,7 +405,7 @@ for s in monkeys: # singe
 	# must call model testing files as determined by pareto3 = [model | set | run | gen | num | fit1 | fit2]
 	# take only half percent of solutions according to value of tche		
 	pool = multiprocessing.Pool(processes = nworker)
-	cut = np.sort(value)[int(len(value)/2.)]
+	cut = np.sort(value)[int(len(value)/4.)]
 	points = np.where(value<cut)[0]
 	pos = np.array_split(points, nworker)
 	# find parameter for all point first; index dict by points array
@@ -441,8 +441,8 @@ for s in monkeys: # singe
 	num_ = int(best_ind[4])
 	data_run = data[s][set_][m][run_]
 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
-	p_test[s+str(set_)] = {'best_test':dict({m:dict(zip(p_order[m],tmp[4:]))})}
-	to_compare_value[s] = {'test':value}
+	p_test[s]['best_test'] = {m+str(set_):dict(zip(p_order[m],tmp[4:]))}
+	to_compare_value[s]['test'] = value4
 	position[s+str(set_)+'_test'] = best_ind[5:]
 	
 	
@@ -513,7 +513,7 @@ for s in monkeys: # singe
 # ------------------------------------
 	# pareto4 = model | run | gen | ind |	
 	pool = multiprocessing.Pool(processes = nworker)
-	cut = np.sort(value)[int(len(value)/2.)]
+	cut = np.sort(value)[int(len(value)/4.)]
 	points = np.where(value<cut)[0]
 	pos = np.array_split(points, nworker)
 	# find parameter for all point first; index dict by points array
