@@ -159,19 +159,20 @@ for i in xrange(n_subjects):
 	ax3.yaxis.set_ticks_position('left')
 	ax3.xaxis.set_ticks_position('bottom')		
 	# value[s]['test'] = value[s]['test'] - value[s]['tche'].min()-value[s]['test'].min()
-	index = value[s]['test'] != value[s]['test'][0]
-	x = np.arange(len(value[s]['test']))
+	# index = value[s]['test'] != value[s]['test'][0]
+	x = np.arange(len(value[s]['tche']))
 	ax3.plot(x, value[s]['tche'], '-', linewidth = lwidth*2, alpha = 0.5, color = 'black')	
-	ax4 = ax3.twinx()	
-	ax4.plot(x[index], value[s]['test'][index], '-', linewidth = 0.5, alpha = 1, color = 'black')			
-	ax4.locator_params(axis = 'y', nbins = 4)
-	ax4.set_ylabel("Least Square error", {'rotation':-90})
+	# ax4 = ax3.twinx()	
+	# ax4.plot(x[index], value[s]['test'][index], '-', linewidth = 0.5, alpha = 1, color = 'black')			
+	# ax4.locator_params(axis = 'y', nbins = 4)
+	# ax4.set_ylabel("Least Square error", {'rotation':-90})
 	ax3.set_ylabel("Ranking value")
 	ax3.set_xlabel("Fit to Choice <-> Fit to RT")
 	# ax3.set_xticks([])		
 	ax3.get_xaxis().set_tick_params(direction='out')
-	ax3.set_xticks([np.argmin(value[s]['tche']), np.argmin(value[s]['test'])])
-	ax3.set_xticklabels(['R', 'L'])
+	# ax3.set_xticks([np.argmin(value[s]['tche']), np.argmin(value[s]['test'])])
+	ax3.set_xticks([np.argmin(value[s]['tche'])])
+	ax3.set_xticklabels(['min'])
 
 
 

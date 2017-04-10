@@ -7,6 +7,7 @@ from fusion_1 import fusion_1
 from mixture_1 import mixture_1
 from bayesian_1 import bayesian_1
 from qlearning_1 import qlearning_1
+import scipy.stats
 
 def center(array):
 	array = array - np.median(array)
@@ -70,7 +71,6 @@ for s in monkeys.keys():
 	data[s][:,6] = center(data[s][:,6])
 	performance_monkeys[s] = []
 	time_monkeys[s] = {i:[] for i in xrange(1,6)}
-	time_models[s] = {i:[] for i in xrange(1,6)}
 	problems_sar = []
 	tmp = [[1, data[s][0,4]-1,data[s][0,5]-1,data[s][0,3]]]	
 	count = 0	
@@ -128,35 +128,40 @@ for s in monkeys.keys():
 	####################################################################################
 	# MODELS PERFORMANCE AND REACTION TIMES
 	problems_sar = np.array(problems_sar)	
-	m = p_test_v1[s]['best_test'].keys()[0]
+	m = p_test_v1[s]['best_tche'].keys()[0]
 	model = models[m][1]
 	best_model[s] = m
-	model.test_call(1000, problems_sar, p_test_v1[s]['best_test'][m])
-	performance_models[s] = np.array(model.performance)
-	tmp2 = {int(i):[] for i in np.unique(model.length)}
-	for i in xrange(performance_models[s].shape[0]):		
-		for j in np.unique(model.length[i]):
-			index = model.length[i] == int(j)
-			tmp2[int(j)].append(model.performance[i,index])			
-	for i in tmp2.iterkeys():
-		tmp2[i] = np.vstack(tmp2[i])
-		tmp2[i] = np.array([np.mean(tmp2[i], 0),
-							np.var(tmp2[i], 0)])
-	performance_models[s] = tmp2
+	model.test_call(1000, problems_sar, p_test_v1[s]['best_tche'][m])
+	performance_models[s] = {}
+	time_models[s] = {}
+	# performance_models[s] = np.array(model.performance)
+	# tmp2 = {int(i):[] for i in np.unique(model.length)}
+	# for i in xrange(performance_models[s].shape[0]):		
+	# 	for j in np.unique(model.length[i]):
+	# 		index = model.length[i] == int(j)
+	# 		tmp2[int(j)].append(model.performance[i,index])			
+	# for i in tmp2.iterkeys():
+	# 	tmp2[i] = np.vstack(tmp2[i])
+	# 	tmp2[i] = np.array([np.mean(tmp2[i], 0),
+	# 						np.var(tmp2[i], 0)])
+	# performance_models[s] = tmp2
 	length_models[s] = np.array([np.sum(model.length==i) for i in xrange(1, 20)]).astype('float')
 	length_models[s] = length_models[s]/np.sum(length_models[s])	
 	# centering rt from models
 	# need mediane and interquartile range
 	timing = model.timing
-	fit = model.sferes_call(np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt"), np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt"), p_test_v1[s]['best_test'][m])
-	for k in timing:
-		timing[k] = timing[k] - model.rt_align[0]
-		timing[k] = timing[k] / model.rt_align[1]
+	fit = model.sferes_call(np.genfromtxt("../../data/data_txt_3_repeat/"+s+".txt"), np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt"), p_test_v1[s]['best_tche'][m])
+	timing = timing - model.rt_align[0]
+	timing = timing / model.rt_align[1]
+
+	for i in xrange(5):
+		index = model.length == i
+		if index.sum():
+			performance_models[s][i+1] = np.array([np.mean(model.performance[index], 0),
+												scipy.stats.sem(model.performance[index], 0)])
+			time_models[s][i+1] = np.array([np.mean(timing[index][:,0:i+4], 0),
+										scipy.stats.sem(timing[index][:,0:i+4], 0)])
 			
-	for k in time_models[s].iterkeys():		
-		time_models[s][k] = np.array([timing[k].mean(0),
-									  timing[k].var(0)])
-	
 #np.std(PR2_art)/np.sqrt(np.size(PR2_art))
 
 
