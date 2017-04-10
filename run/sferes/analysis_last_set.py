@@ -49,7 +49,7 @@ import copy
 # ------------------------------------
 # FUNCTION FOR MULTIPROCESSING
 # ------------------------------------
-nworker = 6
+nworker = 8
 
 def worker_test_star(a_b):
 	return worker_test(*a_b)
@@ -66,7 +66,7 @@ def worker_test(w, pos_, s, p_to_test_):
 		
 		model = copy.deepcopy(vmodels[m][int(v)])
 		fit = model.sferes_call(data_1, data_2, p)
-		model.test_call(2, problems_sar[s], p)
+		model.test_call(100, problems_sar[s], p)
 
 		model.timing = model.timing - model.rt_align[0]
 		model.timing = model.timing / model.rt_align[1]
@@ -409,47 +409,47 @@ for s in monkeys: # singe
 	# FOR ALL SET
 	# must call model testing files as determined by pareto3 = [model | set | run | gen | num | fit1 | fit2]
 	# take only half percent of solutions according to value of tche		
-	# pool = multiprocessing.Pool(processes = nworker)
-	# cut = np.sort(value)[int(len(value)/2.)]
-	# points = np.where(value<cut)[0]
-	# pos = np.array_split(points, nworker)
-	# # find parameter for all point first; index dict by points array
-	# p_to_test = {}
-	# for t in points:
-	# 	l = pareto3[s][t]
-	# 	m = id_to_models[int(l[0])]
-	# 	set_ = int(l[1])
-	# 	run_ = int(l[2])
-	# 	gen_ = int(l[3])
-	# 	num_ = int(l[4])		
-	# 	data_run = data[s][set_][m][run_]
-	# 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
-	# 	p_to_test[t] = { m+"."+str(set_) :  dict(zip(p_order[m],tmp[4:])) }
+	pool = multiprocessing.Pool(processes = nworker)
+	cut = np.sort(value)[int(len(value)/4.)]
+	points = np.where(value<cut)[0]
+	pos = np.array_split(points, nworker)
+	# find parameter for all point first; index dict by points array
+	p_to_test = {}
+	for t in points:
+		l = pareto3[s][t]
+		m = id_to_models[int(l[0])]
+		set_ = int(l[1])
+		run_ = int(l[2])
+		gen_ = int(l[3])
+		num_ = int(l[4])		
+		data_run = data[s][set_][m][run_]
+		tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+		p_to_test[t] = { m+"."+str(set_) :  dict(zip(p_order[m],tmp[4:])) }
 
-	# sys.exit()
-	# value4 = pool.map(worker_test_star, itertools.izip(range(nworker), pos, itertools.repeat(s), itertools.repeat(p_to_test)))
-	# value4 = np.vstack(np.array(value4))
-	# value4[:,1:] = (value4[:,1:] - np.min(value4[:,1:], 0))/(np.max(value4[:,1:], 0) - np.min(value4[:,1:], 0))
-	# value4 = np.vstack((value4[:,0], np.sum(value4[:,1:], 1))).transpose()
-	# ind_best_point = int(value4[np.argmin(value4[:,1]), 0])	
-	# # pareto 3 has points with negative value must search in the pareto3 index	
-	# tmp = pareto3[s][:,5:]
-	# x = np.arange(len(tmp))
-	# index = (tmp[:,0]>0)*(tmp[:,1]>0)
-	# ind_best_point = x[index][ind_best_point]
-	# best_ind = pareto3[s][ind_best_point]
+	sys.exit()
+	value4 = pool.map(worker_test_star, itertools.izip(range(nworker), pos, itertools.repeat(s), itertools.repeat(p_to_test)))
+	value4 = np.vstack(np.array(value4))
+	value4[:,1:] = (value4[:,1:] - np.min(value4[:,1:], 0))/(np.max(value4[:,1:], 0) - np.min(value4[:,1:], 0))
+	value4 = np.vstack((value4[:,0], np.sum(value4[:,1:], 1))).transpose()
+	ind_best_point = int(value4[np.argmin(value4[:,1]), 0])	
+	# pareto 3 has points with negative value must search in the pareto3 index	
+	tmp = pareto3[s][:,5:]
+	x = np.arange(len(tmp))
+	index = (tmp[:,0]>0)*(tmp[:,1]>0)
+	ind_best_point = x[index][ind_best_point]
+	best_ind = pareto3[s][ind_best_point]
 
-	# # from data dictionnary
-	# m = id_to_models[int(best_ind[0])]
-	# set_ = int(best_ind[1])
-	# run_ = int(best_ind[2])
-	# gen_ = int(best_ind[3])
-	# num_ = int(best_ind[4])
-	# data_run = data[s][set_][m][run_]
-	# tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
-	# p_test[s]['best_test'] = {m+str(set_):dict(zip(p_order[m],tmp[4:]))}
-	# to_compare_value[s]['test'] = value4
-	# position[s+str(set_)+'_test'] = best_ind[5:]
+	# from data dictionnary
+	m = id_to_models[int(best_ind[0])]
+	set_ = int(best_ind[1])
+	run_ = int(best_ind[2])
+	gen_ = int(best_ind[3])
+	num_ = int(best_ind[4])
+	data_run = data[s][set_][m][run_]
+	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+	p_test[s]['best_test'] = {m+str(set_):dict(zip(p_order[m],tmp[4:]))}
+	to_compare_value[s]['test'] = value4
+	position[s+str(set_)+'_test'] = best_ind[5:]
 	
 	
 
