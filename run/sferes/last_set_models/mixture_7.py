@@ -355,7 +355,7 @@ class mixture_7():
 		index = range(self.n_action)
 		index.pop(int(self.current_action))        
 		self.values_mf[index] = self.values_mf[index] + (1.0-self.parameters['kappa']) * (0.0 - self.values_mf[index])        
-		if self.delta < sef.parameters['xi'] or self.delta > self.parameters['yi']:		
+		if self.delta < self.parameters['xi'] or self.delta > self.parameters['yi']:		
 			if self.parameters['noise']:
 				self.p_a = self.p_a*(1-self.parameters['noise'])+self.parameters['noise']*(1.0/self.n_action*np.ones(self.p_a.shape))
 				self.p_r_a = self.p_r_a*(1-self.parameters['noise'])+self.parameters['noise']*(0.5*np.ones(self.p_r_a.shape))

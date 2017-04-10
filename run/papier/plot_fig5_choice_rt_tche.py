@@ -157,7 +157,7 @@ for s in monkeys.keys():
 		time_models[s][k] = np.array([timing[k].mean(0),
 									  timing[k].var(0)])
 	
-
+#np.std(PR2_art)/np.sqrt(np.size(PR2_art))
 
 
 all_data = {'performance_models':performance_models,

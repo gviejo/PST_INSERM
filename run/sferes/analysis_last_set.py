@@ -49,7 +49,8 @@ import copy
 # ------------------------------------
 # FUNCTION FOR MULTIPROCESSING
 # ------------------------------------
-nworker = 28
+nworker = 4
+
 def worker_test_star(a_b):
 	return worker_test(*a_b)
 
@@ -60,7 +61,7 @@ def worker_test(w, pos_, s, p_to_test_):
 	data_2 = np.genfromtxt("../../data/data_txt_3_repeat/"+s+"_rt_reg.txt")
 
 	for t in pos_:
-		m, v = p_to_test_[t].keys()[0].split(".") # model, version
+		m, v = p_to_test_[t].keys()[0].split(".") # model, version		
 		p = p_to_test_[t][p_to_test_[t].keys()[0]]		
 		
 		model = copy.deepcopy(vmodels[m][int(v)])
@@ -341,6 +342,10 @@ for s in monkeys: # singe
 		for p in [1,2,3,4,5,6,7]:
 			if m in set_to_models[p]:
 				tmp[p] = pareto[s][p][id_to_models[m]]
+				if m in [1,2] and p < 6:
+					tmp[p] = np.hstack((tmp[p],np.zeros((len(tmp[p]),2)))) # need to add dummy array
+				
+					
 		tmp=np.vstack([np.hstack((np.ones((len(tmp[p]),1))*p,tmp[p])) for p in tmp.iterkeys()])			
 		ind = tmp[:,4] != 0
 		tmp = tmp[ind]
@@ -405,7 +410,7 @@ for s in monkeys: # singe
 	# must call model testing files as determined by pareto3 = [model | set | run | gen | num | fit1 | fit2]
 	# take only half percent of solutions according to value of tche		
 	pool = multiprocessing.Pool(processes = nworker)
-	cut = np.sort(value)[int(len(value)/4.)]
+	cut = np.sort(value)[int(len(value)/8.)]
 	points = np.where(value<cut)[0]
 	pos = np.array_split(points, nworker)
 	# find parameter for all point first; index dict by points array
@@ -413,14 +418,15 @@ for s in monkeys: # singe
 	for t in points:
 		l = pareto3[s][t]
 		m = id_to_models[int(l[0])]
-		set_ = int(best_ind[1])
-		run_ = int(best_ind[2])
-		gen_ = int(best_ind[3])
-		num_ = int(best_ind[4])		
+		set_ = int(l[1])
+		run_ = int(l[2])
+		gen_ = int(l[3])
+		num_ = int(l[4])		
 		data_run = data[s][set_][m][run_]
 		tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
 		p_to_test[t] = { m+"."+str(set_) :  dict(zip(p_order[m],tmp[4:])) }
 
+	
 	value4 = pool.map(worker_test_star, itertools.izip(range(nworker), pos, itertools.repeat(s), itertools.repeat(p_to_test)))
 	value4 = np.vstack(np.array(value4))
 	value4[:,1:] = (value4[:,1:] - np.min(value4[:,1:], 0))/(np.max(value4[:,1:], 0) - np.min(value4[:,1:], 0))
@@ -513,7 +519,7 @@ for s in monkeys: # singe
 # ------------------------------------
 	# pareto4 = model | run | gen | ind |	
 	pool = multiprocessing.Pool(processes = nworker)
-	cut = np.sort(value)[int(len(value)/4.)]
+	cut = np.sort(value)[int(len(value)/8.)]
 	points = np.where(value<cut)[0]
 	pos = np.array_split(points, nworker)
 	# find parameter for all point first; index dict by points array

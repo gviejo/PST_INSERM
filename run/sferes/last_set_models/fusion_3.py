@@ -268,7 +268,7 @@ class fusion_3():
 		self.list_of_problems = list_of_problems[list_of_problems[:,0] == 1,1]
 		self.N = len(self.list_of_problems)
 		self.performance = np.zeros((nb_repeat, len(self.list_of_problems), 3))
-		self.timing = {i:[] for i in xrange(1, 20)}
+		self.timing = np.zeros((nb_repeat, len(self.list_of_problems), 8))
 		self.length = np.zeros((nb_repeat, len(self.list_of_problems)))
 
 		for k in xrange(nb_repeat):
