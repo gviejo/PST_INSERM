@@ -45,6 +45,8 @@ from time import sleep
 import cPickle as pickle
 import copy 
 
+from time import sleep
+
 
 # ------------------------------------
 # FUNCTION FOR MULTIPROCESSING
@@ -215,6 +217,7 @@ pareto4 = {}
 p_test = {}
 p_test2 = {}
 p_test_v1 = {}
+p_test_m = {}
 tche = {}
 indd = {}
 position = {}
@@ -406,50 +409,50 @@ for s in monkeys: # singe
 # ------------------------------------
 # SELECTION BY TESTING PARAMETERS
 # ------------------------------------
-	# FOR ALL SET
-	# must call model testing files as determined by pareto3 = [model | set | run | gen | num | fit1 | fit2]
-	# take only half percent of solutions according to value of tche		
-	pool = multiprocessing.Pool(processes = nworker)
-	cut = np.sort(value)[int(len(value)/4.)]
-	points = np.where(value<cut)[0]
-	pos = np.array_split(points, nworker)
-	# find parameter for all point first; index dict by points array
-	p_to_test = {}
-	for t in points:
-		l = pareto3[s][t]
-		m = id_to_models[int(l[0])]
-		set_ = int(l[1])
-		run_ = int(l[2])
-		gen_ = int(l[3])
-		num_ = int(l[4])		
-		data_run = data[s][set_][m][run_]
-		tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
-		p_to_test[t] = { m+"."+str(set_) :  dict(zip(p_order[m],tmp[4:])) }
+	# # FOR ALL SET
+	# # must call model testing files as determined by pareto3 = [model | set | run | gen | num | fit1 | fit2]
+	# # take only half percent of solutions according to value of tche		
+	# pool = multiprocessing.Pool(processes = nworker)
+	# cut = np.sort(value)[int(len(value)/4.)]
+	# points = np.where(value<cut)[0]
+	# pos = np.array_split(points, nworker)
+	# # find parameter for all point first; index dict by points array
+	# p_to_test = {}
+	# for t in points:
+	# 	l = pareto3[s][t]
+	# 	m = id_to_models[int(l[0])]
+	# 	set_ = int(l[1])
+	# 	run_ = int(l[2])
+	# 	gen_ = int(l[3])
+	# 	num_ = int(l[4])		
+	# 	data_run = data[s][set_][m][run_]
+	# 	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+	# 	p_to_test[t] = { m+"."+str(set_) :  dict(zip(p_order[m],tmp[4:])) }
 
-	sys.exit()
-	value4 = pool.map(worker_test_star, itertools.izip(range(nworker), pos, itertools.repeat(s), itertools.repeat(p_to_test)))
-	value4 = np.vstack(np.array(value4))
-	value4[:,1:] = (value4[:,1:] - np.min(value4[:,1:], 0))/(np.max(value4[:,1:], 0) - np.min(value4[:,1:], 0))
-	value4 = np.vstack((value4[:,0], np.sum(value4[:,1:], 1))).transpose()
-	ind_best_point = int(value4[np.argmin(value4[:,1]), 0])	
-	# pareto 3 has points with negative value must search in the pareto3 index	
-	tmp = pareto3[s][:,5:]
-	x = np.arange(len(tmp))
-	index = (tmp[:,0]>0)*(tmp[:,1]>0)
-	ind_best_point = x[index][ind_best_point]
-	best_ind = pareto3[s][ind_best_point]
+	# sys.exit()
+	# value4 = pool.map(worker_test_star, itertools.izip(range(nworker), pos, itertools.repeat(s), itertools.repeat(p_to_test)))
+	# value4 = np.vstack(np.array(value4))
+	# value4[:,1:] = (value4[:,1:] - np.min(value4[:,1:], 0))/(np.max(value4[:,1:], 0) - np.min(value4[:,1:], 0))
+	# value4 = np.vstack((value4[:,0], np.sum(value4[:,1:], 1))).transpose()
+	# ind_best_point = int(value4[np.argmin(value4[:,1]), 0])	
+	# # pareto 3 has points with negative value must search in the pareto3 index	
+	# tmp = pareto3[s][:,5:]
+	# x = np.arange(len(tmp))
+	# index = (tmp[:,0]>0)*(tmp[:,1]>0)
+	# ind_best_point = x[index][ind_best_point]
+	# best_ind = pareto3[s][ind_best_point]
 
-	# from data dictionnary
-	m = id_to_models[int(best_ind[0])]
-	set_ = int(best_ind[1])
-	run_ = int(best_ind[2])
-	gen_ = int(best_ind[3])
-	num_ = int(best_ind[4])
-	data_run = data[s][set_][m][run_]
-	tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
-	p_test[s]['best_test'] = {m+str(set_):dict(zip(p_order[m],tmp[4:]))}
-	to_compare_value[s]['test'] = value4
-	position[s+str(set_)+'_test'] = best_ind[5:]
+	# # from data dictionnary
+	# m = id_to_models[int(best_ind[0])]
+	# set_ = int(best_ind[1])
+	# run_ = int(best_ind[2])
+	# gen_ = int(best_ind[3])
+	# num_ = int(best_ind[4])
+	# data_run = data[s][set_][m][run_]
+	# tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+	# p_test[s]['best_test'] = {m+str(set_):dict(zip(p_order[m],tmp[4:]))}
+	# to_compare_value[s]['test'] = value4
+	# position[s+str(set_)+'_test'] = best_ind[5:]
 	
 	
 
@@ -564,7 +567,42 @@ for s in monkeys: # singe
 		bic_ = pareto[s][1][m][0,3]*(best_bic-worst_bic)+worst_bic
 		tmp[m+"_"+str(bic_)] = dict(zip(p_order[m],pareto[s][1][m][0,5:]))
 	p_test_v1[s]['best_choice'] = tmp	
-	
+
+# ------------------------------------
+# TCHEBYTCHEV OVER MIXTURE AND FUSION ONLY FROM PARETO 3
+# ------------------------------------
+# pareto3 = model | set | run | gen | num | fit1 | fit2	
+	p_test_m[s] = {}
+	for m in [1,2]:
+		index = (pareto3[s][:,0] == m)*(pareto3[s][:,5]>0)*(pareto3[s][:,6]>0)
+		tmp = pareto3[s][index,5:]
+		ideal = np.max(tmp, 0)
+		nadir = np.min(tmp, 0)
+		value = 0.5*((ideal-tmp)/(ideal-nadir))
+		value = np.max(value, 1)+0.1*np.sum(value,1)
+		ind_best_point = np.argmin(value)
+		# Saving best individual
+		x = np.arange(len(index))
+		best_ind = pareto3[s][x[index][ind_best_point]]	
+		# from data dictionnary
+		m_ = id_to_models[int(best_ind[0])]
+		if m != int(best_ind[0]): 
+			print "error"
+			sys.exit()
+		set_ = int(best_ind[1])
+		run_ = int(best_ind[2])
+		gen_ = int(best_ind[3])
+		num_ = int(best_ind[4])
+
+		data_run = data[s][set_][m_][run_]
+		tmp = data_run[(data_run[:,0] == gen_)*(data_run[:,1] == num_)][0]
+		p_test_m[s][m_] = {'best_tche':{m_+str(set_):dict(zip(p_order[m_],tmp[4:]))}}
+		to_compare_value[s][m_] = value
+		position[s+m_+'_tche'] = best_ind[5:]	
+
+	sleep(4)
+
+
 
 # # SAVING IN ../papier/
 with open("../papier/p_test_v1.pickle",'wb') as f:
@@ -573,7 +611,8 @@ with open("../papier/to_compare_value.pickle", 'wb') as f:
 	pickle.dump(to_compare_value, f)
 with open("../papier/p_test_all_v.pickle", 'wb') as f:
 	pickle.dump(p_test, f)
-
+with open("../papier/p_test_m.pickle", 'wb') as f:
+	pickle.dump(p_test_m, f)
 
 with open("../papier/pareto2.pickle", 'wb') as f:
 	pickle.dump(pareto2, f)
